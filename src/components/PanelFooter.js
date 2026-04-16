@@ -23,18 +23,18 @@ export default function PanelFooter({ role = 'panel' }) {
               <span className="text-base">💬</span> WhatsApp soporte
             </a>
             <a
-              href="mailto:soporte@serviya.co"
+              href="mailto:soporte@serviyacol.com"
               className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-emerald-600 transition-colors"
             >
-              <span className="text-base">✉️</span> soporte@serviya.co
+              <span className="text-base">✉️</span> soporte@serviyacol.com
             </a>
             <a
-              href="https://serviya.co"
+              href="https://www.serviyacol.com"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-emerald-600 transition-colors"
             >
-              <span className="text-base">🌐</span> serviya.co
+              <span className="text-base">🌐</span> serviyacol.com
             </a>
           </div>
         </div>

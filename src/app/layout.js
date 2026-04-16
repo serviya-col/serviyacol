@@ -15,7 +15,7 @@ export const metadata = {
   keywords: 'técnicos a domicilio, plomeros, electricistas, cerrajeros, Colombia, Bogotá, Medellín, ServiYa',
   authors: [{ name: 'ServiYa' }],
   creator: 'ServiYa',
-  metadataBase: new URL('https://serviya.co'),
+  metadataBase: new URL('https://www.serviyacol.com'),
   openGraph: {
     title: 'ServiYa — Tu técnico de confianza en menos de 1 hora',
     description: 'Conectamos hogares y empresas con técnicos certificados en toda Colombia. Rápido, seguro y con garantía.',

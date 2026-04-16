@@ -42,7 +42,7 @@ export async function POST(req) {
     const valor_tecnico  = monto - valor_comision
     const referencia     = generarReferencia()
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://serviya.co'
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.serviyacol.com'
 
     // ── Crear link de pago en Bold ─────────────────────────────────────────
     const boldKey = process.env.BOLD_API_KEY || ''
