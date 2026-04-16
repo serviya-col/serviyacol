@@ -90,9 +90,10 @@ function SolicitarForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           solicitud: {
-            tipo_servicio: form.categoria,
+            tipo_servicio: form.categoria,   // mapeamos categoria → tipo_servicio para notify.js
+            categoria: form.categoria,
             ciudad: form.ciudad,
-            urgencia: 'Normal', // Puedes ajustar si agregas un campo de urgencia
+            urgencia: 'Normal',
             descripcion: form.descripcion
           },
           clienteNombre: form.cliente_nombre

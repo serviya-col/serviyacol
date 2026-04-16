@@ -652,7 +652,19 @@ export default function TecnicoPage() {
     if (!error) {
       const accepted = disponibles.find(s => s.id === solicitudId)
       setDisp(prev => prev.filter(s => s.id !== solicitudId))
-      if (accepted) setMisSols(prev => [{ ...accepted, tecnico_id: tecnico.id, estado: 'asignada' }, ...prev])
+      if (accepted) {
+        setMisSols(prev => [{ ...accepted, tecnico_id: tecnico.id, estado: 'asignada' }, ...prev])
+        // Notificar al cliente que se le asignó un técnico
+        fetch('/api/notify/asignacion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            solicitud: { ...accepted, tipo_servicio: accepted.categoria },
+            tecnico: { nombre: tecnico.nombre, email: tecnico.email, telefono: tecnico.telefono, categoria: tecnico.categoria, ciudad: tecnico.ciudad },
+            cliente: { nombre: accepted.cliente_nombre || null, email: accepted.cliente_email || null, telefono: accepted.cliente_telefono || null },
+          }),
+        }).catch(() => {})
+      }
     }
   }
 

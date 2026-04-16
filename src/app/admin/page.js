@@ -896,11 +896,20 @@ export default function AdminPage() {
     if (tid) {
       const sol  = solicitudes.find(s => s.id === sid)
       const tec  = tecnicos.find(t => t.id === tid)
-      const cli  = clientes.find(c => c.id === sol?.cliente_id)
       if (sol && tec) {
+        // Usamos los datos del cliente directamente de la solicitud
+        const clienteData = {
+          nombre:   sol.cliente_nombre   || null,
+          email:    sol.cliente_email    || null,
+          telefono: sol.cliente_telefono || null,
+        }
         fetch('/api/notify/asignacion', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ solicitud: sol, tecnico: tec, cliente: cli || null }),
+          body: JSON.stringify({
+            solicitud: { ...sol, tipo_servicio: sol.categoria },
+            tecnico: tec,
+            cliente: clienteData,
+          }),
         }).catch(() => {})
       }
     }
