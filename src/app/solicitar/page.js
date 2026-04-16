@@ -83,6 +83,22 @@ function SolicitarForm() {
       setError('Error al enviar la solicitud. Intenta de nuevo.')
     } else {
       setSuccess(true)
+
+      // Llamar a nuestra API de notificaciones para avisarle al Admin
+      fetch('/api/notify/nueva-solicitud', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          solicitud: {
+            tipo_servicio: form.categoria,
+            ciudad: form.ciudad,
+            urgencia: 'Normal', // Puedes ajustar si agregas un campo de urgencia
+            descripcion: form.descripcion
+          },
+          clienteNombre: form.cliente_nombre
+        })
+      }).catch(err => console.warn('Error mandando notificacion:', err))
+
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('track', 'Lead', {
           content_name: form.categoria,
@@ -90,6 +106,7 @@ function SolicitarForm() {
         })
       }
     }
+
   }
 
   /* ── Success screen ── */
