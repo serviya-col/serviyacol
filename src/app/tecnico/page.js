@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import PanelFooter from '@/components/PanelFooter'
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
@@ -695,12 +696,13 @@ export default function TecnicoPage() {
           💳 Cobrar
         </Link>
       )}
-      {/* pt-14 on mobile: space for fixed header. pb-20 on mobile: space for bottom nav */}
-      <main className="flex-1 min-h-screen overflow-auto pt-14 pb-24 md:pt-0 md:pb-0">
+      {/* pt-14 on mobile: space for fixed header. pb-28 on mobile: space for bottom nav + FAB */}
+      <main className="flex-1 min-h-screen overflow-auto pt-14 pb-28 md:pt-0 md:pb-0">
         {view === 'dashboard'   && <DashboardView tecnico={tecnico} misSolicitudes={misSols} disponiblesCount={disponibles.length} setView={setView} />}
         {view === 'disponibles' && <DisponiblesView disponibles={disponibles} onAceptar={aceptar} />}
         {view === 'mias'        && <MiasSolicitudesView solicitudes={misSols} onUpdateEstado={updateEstado} />}
         {view === 'perfil'      && <PerfilView tecnico={tecnico} pago={pago} onUpdatePerfil={updatePerfil} onUpdatePago={updatePago} />}
+        <PanelFooter role="tecnico" />
       </main>
     </div>
   )

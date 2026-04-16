@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import PanelFooter from '@/components/PanelFooter'
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
@@ -567,11 +568,12 @@ export default function ClientePage() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar view={view} setView={setView} user={user} onLogout={logout} totalSolicitudes={totalSolicitudes} />
       <ClienteBottomNav view={view} setView={setView} totalSolicitudes={totalSolicitudes} />
-      {/* pt-14 mobile: space for fixed header. pb-20 mobile: space for bottom nav */}
-      <main className="flex-1 min-h-screen overflow-auto pt-14 pb-20 md:pt-0 md:pb-0">
+      {/* pt-14 mobile: space for fixed header. pb-24 mobile: space for bottom nav */}
+      <main className="flex-1 min-h-screen overflow-auto pt-14 pb-24 md:pt-0 md:pb-0">
         {view === 'dashboard' && <DashboardView user={user} solicitudes={solicitudes} setView={setView} />}
         {view === 'solicitudes' && <SolicitudesView solicitudes={solicitudes} tecnicosById={tecnicosById} onCancelar={cancelarSolicitud} />}
         {view === 'perfil' && <PerfilView user={user} cliente={cliente} />}
+        <PanelFooter role="cliente" />
       </main>
     </div>
   )

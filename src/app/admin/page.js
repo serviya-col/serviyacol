@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
+import PanelFooter from '@/components/PanelFooter'
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
@@ -469,96 +470,81 @@ function ClientesView({ clientes }) {
   }), [clientes, search, filtroRegistro, filtroActivos])
 
   return (
-    <div className="p-6">
-      <div className="mb-5">
-        <h2 className="text-xl font-extrabold text-gray-900">Clientes</h2>
+    <div className="p-4 md:p-6 w-full">
+      <div className="mb-4">
+        <h2 className="text-lg md:text-xl font-extrabold text-gray-900">Clientes</h2>
         <p className="text-sm text-gray-400 mt-0.5">{filtered.length} de {clientes.length} clientes en base de datos</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400">Total clientes</p>
-          <p className="text-2xl font-extrabold text-gray-900 mt-1">{clientes.length}</p>
+      {/* KPIs — 2 cols mobile */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
+          <p className="text-[10px] text-gray-400">Total clientes</p>
+          <p className="text-xl font-extrabold text-gray-900 mt-0.5">{clientes.length}</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400">Registrados</p>
-          <p className="text-2xl font-extrabold text-emerald-600 mt-1">{clientes.filter(c => c.hasCuenta).length}</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
+          <p className="text-[10px] text-gray-400">Registrados</p>
+          <p className="text-xl font-extrabold text-emerald-600 mt-0.5">{clientes.filter(c => c.hasCuenta).length}</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400">Con solicitudes activas</p>
-          <p className="text-2xl font-extrabold text-amber-600 mt-1">{clientes.filter(c => c.solicitudesActivas > 0).length}</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
+          <p className="text-[10px] text-gray-400">Con solicitudes activas</p>
+          <p className="text-xl font-extrabold text-amber-600 mt-0.5">{clientes.filter(c => c.solicitudesActivas > 0).length}</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400">Ingresos potenciales</p>
-          <p className="text-2xl font-extrabold text-blue-600 mt-1">${(clientes.reduce((acc, c) => acc + c.solicitudesActivas, 0) * 50000).toLocaleString('es-CO')}</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
+          <p className="text-[10px] text-gray-400">Ingr. estimados</p>
+          <p className="text-sm font-extrabold text-blue-600 mt-0.5">${(clientes.reduce((acc, c) => acc + c.solicitudesActivas, 0) * 50000).toLocaleString('es-CO')}</p>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-5">
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre, email o teléfono..."
-          className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 flex-1 min-w-[220px]" />
-        <select value={filtroRegistro} onChange={e => setFiltroRegistro(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      {/* Filtros */}
+      <div className="grid grid-cols-2 sm:flex flex-wrap gap-2 mb-4">
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..."
+          className="col-span-2 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-full sm:flex-1" />
+        <select value={filtroRegistro} onChange={e => setFiltroRegistro(e.target.value)} className="border border-gray-200 rounded-xl px-2.5 py-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
           <option value="">Todos</option>
           <option value="si">Registrados</option>
           <option value="no">Sin cuenta</option>
         </select>
-        <select value={filtroActivos} onChange={e => setFiltroActivos(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <select value={filtroActivos} onChange={e => setFiltroActivos(e.target.value)} className="border border-gray-200 rounded-xl px-2.5 py-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
           <option value="">Actividad</option>
-          <option value="si">Con solicitudes activas</option>
-          <option value="no">Sin solicitudes activas</option>
+          <option value="si">Con solicitudes</option>
+          <option value="no">Sin solicitudes</option>
         </select>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {filtered.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-12">No hay clientes con esos filtros</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  <th className="text-left px-4 py-3">Cliente</th>
-                  <th className="text-left px-4 py-3">Contacto</th>
-                  <th className="text-left px-4 py-3">Solicitudes</th>
-                  <th className="text-left px-4 py-3">Última actividad</th>
-                  <th className="text-left px-4 py-3">Cuenta</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filtered.map(c => (
-                  <tr key={c.key} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <p className="font-semibold text-gray-800">{c.nombre}</p>
-                      <p className="text-xs text-gray-400 truncate">{c.email || 'Sin correo'}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-xs text-gray-700">{c.telefono || 'Sin teléfono'}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">Total {c.totalSolicitudes}</span>
-                        <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">Activas {c.solicitudesActivas}</span>
-                        <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">Completadas {c.completadas}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
-                      {new Date(c.ultimaActividad).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${c.hasCuenta ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-                        {c.hasCuenta ? 'Registrado' : 'Invitado'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {filtered.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-12">No hay clientes con esos filtros</p>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(c => (
+            <div key={c.key} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <div className="w-9 h-9 rounded-full bg-sky-50 flex items-center justify-center text-sky-700 font-extrabold text-sm flex-shrink-0">{c.nombre.charAt(0)}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-gray-800 text-sm truncate">{c.nombre}</p>
+                  <p className="text-xs text-gray-400 truncate">{c.email || 'Sin correo'}</p>
+                  <p className="text-xs text-gray-400">{c.telefono || 'Sin teléfono'}</p>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${c.hasCuenta ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                  {c.hasCuenta ? 'Registrado' : 'Invitado'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">Total {c.totalSolicitudes}</span>
+                <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">Activas {c.solicitudesActivas}</span>
+                <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">Completadas {c.completadas}</span>
+              </div>
+              <p className="text-[10px] text-gray-300 mt-1">
+                Última actividad: {new Date(c.ultimaActividad).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
+
 
 // ─── Docs Modal ──────────────────────────────────────────────────────────────
 function DocsModal({ tecnico, pago, onClose, onVerificar, onActivar }) {
@@ -949,8 +935,8 @@ export default function AdminPage() {
         sinVerificar={sinVerificarCount}
         cobrosCount={cobrosCount}
       />
-      {/* pt-14 on mobile: space for fixed header. pb-20 on mobile: space for bottom nav */}
-      <main className="flex-1 min-h-screen overflow-auto pt-14 pb-20 md:pt-0 md:pb-0">
+      {/* pt-14 on mobile: space for fixed header. pb-24 on mobile: space for bottom nav */}
+      <main className="flex-1 min-h-screen overflow-auto pt-14 pb-24 md:pt-0 md:pb-0">
         {dataLoading ? (
           <div className="flex items-center justify-center h-64">
             <span className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin block" />
@@ -966,6 +952,7 @@ export default function AdminPage() {
         ) : (
           <TecnicosView tecnicos={tecnicos} pagosByTecnico={pagosByTecnico} onVerificar={verificarTecnico} onActivar={activarTecnico} />
         )}
+        <PanelFooter role="admin" />
       </main>
     </div>
   )

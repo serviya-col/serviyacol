@@ -1,12 +1,17 @@
 'use client'
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 
-// TODO: Cambia este número por el WhatsApp real de ServiYa
 const WHATSAPP_NUMBER = '573001234567'
 const WHATSAPP_MESSAGE = 'Hola ServiYa 👋 Necesito un técnico a domicilio.'
 
 export default function WhatsAppButton() {
   const [hovered, setHovered] = useState(false)
+  const pathname = usePathname()
+
+  // Ocultar en todos los paneles internos
+  const isPanelRoute = ['/admin', '/tecnico', '/cliente'].some(r => pathname?.startsWith(r))
+  if (isPanelRoute) return null
 
   const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
 
