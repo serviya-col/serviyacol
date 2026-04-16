@@ -163,8 +163,12 @@ export default function RegistroTecnico() {
       return
     }
 
-    // Éxito — redirigir al panel de técnico
+    // Éxito — notificar y redirigir al panel de técnico
     setSuccess(true)
+    fetch('/api/notify/registro', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: 'tecnico', nombre: form.nombre, email: form.email, telefono: form.telefono }),
+    }).catch(() => {})
     setTimeout(() => router.push('/tecnico'), 2500)
   }
 

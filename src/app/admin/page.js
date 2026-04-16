@@ -892,6 +892,18 @@ export default function AdminPage() {
     const upd = { tecnico_id: tid, estado: tid ? 'asignada' : 'pendiente' }
     await supabase.from('solicitudes').update(upd).eq('id', sid)
     setS(prev => prev.map(s => s.id === sid ? { ...s, ...upd } : s))
+    // Notificar asignación
+    if (tid) {
+      const sol  = solicitudes.find(s => s.id === sid)
+      const tec  = tecnicos.find(t => t.id === tid)
+      const cli  = clientes.find(c => c.id === sol?.cliente_id)
+      if (sol && tec) {
+        fetch('/api/notify/asignacion', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ solicitud: sol, tecnico: tec, cliente: cli || null }),
+        }).catch(() => {})
+      }
+    }
   }
   const verificarTecnico = async (id, verificado) => {
     await supabase.from('tecnicos').update({ verificado }).eq('id', id)
@@ -904,6 +916,15 @@ export default function AdminPage() {
   const marcarTecnicoPagado = async (id) => {
     await supabase.from('cobros').update({ pagado_tecnico: true, fecha_pago_tecnico: new Date().toISOString() }).eq('id', id)
     setCobros(prev => prev.map(c => c.id === id ? { ...c, pagado_tecnico: true } : c))
+    // Notificar pago al técnico
+    const cobro = cobros.find(c => c.id === id)
+    const tec   = tecnicos.find(t => t.id === cobro?.tecnico_id)
+    if (cobro && tec) {
+      fetch('/api/notify/pago-tecnico', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tecnico: tec, cobro }),
+      }).catch(() => {})
+    }
   }
   const logout = async () => { await supabase.auth.signOut(); setUser(null) }
 

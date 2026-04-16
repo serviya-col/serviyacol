@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { notifyPagoConfirmado } from '@/lib/notify'
 
 export async function POST(req) {
   try {
@@ -67,6 +68,27 @@ export async function POST(req) {
         console.error('Supabase update error en webhook:', error)
       } else {
         console.log(`Cobro ${referencia} actualizado a ${nuevoEstado}`)
+
+        // ── Notificar pago confirmado ────────────────────────────────────────
+        if (nuevoEstado === 'pagado') {
+          try {
+            // Buscar el cobro completo + email del técnico
+            const { data: cobro } = await supabaseAdmin
+              .from('cobros').select('*').eq('referencia', referencia).single()
+
+            if (cobro?.tecnico_id) {
+              const { data: tec } = await supabaseAdmin
+                .from('tecnicos').select('email, telefono').eq('id', cobro.tecnico_id).single()
+              if (tec) {
+                cobro.tecnico_email   = tec.email
+                cobro.tecnico_telefono = cobro.tecnico_telefono || tec.telefono
+              }
+            }
+            if (cobro) await notifyPagoConfirmado({ cobro })
+          } catch (notifyErr) {
+            console.warn('Notify pago error:', notifyErr.message)
+          }
+        }
       }
     }
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { notifyCobroCreado } from '@/lib/notify'
 
 const BOLD_API_URL = 'https://integrations.api.bold.co'
 const COMISION_PCT = 15
@@ -17,11 +18,12 @@ export async function POST(req) {
   try {
     const body = await req.json()
     const {
-      tecnico_id,
+    tecnico_id,
       tecnico_nombre,
       tecnico_telefono,
       cliente_nombre,
       cliente_telefono,
+      cliente_email,
       descripcion,
       valor_total,
       ciudad,
@@ -103,6 +105,7 @@ export async function POST(req) {
       tecnico_telefono,
       cliente_nombre,
       cliente_telefono,
+      cliente_email:        cliente_email || null,
       ciudad:               ciudad || null,
       descripcion,
       valor_total:          monto,
@@ -135,6 +138,14 @@ export async function POST(req) {
     )
 
     const whatsapp_link = `https://wa.me/${waNumber}?text=${waMsg}`
+
+    // ── Notificar al cliente ───────────────────────────────────────────────────
+    notifyCobroCreado({
+      cobro: {
+        referencia, cliente_nombre, cliente_telefono, cliente_email: cliente_email || null,
+        tecnico_nombre, descripcion, valor_total: monto, bold_link: boldLink,
+      },
+    }).catch(() => {})
 
     return NextResponse.json({
       ok: true,

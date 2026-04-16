@@ -63,6 +63,11 @@ function AuthScreen({ onSuccess, forcedError = '' }) {
     if (data.user) {
       setMessage('Cuenta creada. Si no entraste automáticamente, revisa tu correo para confirmar.')
       onSuccess(data.user)
+      // Notificar bienvenida
+      fetch('/api/notify/registro', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo: 'cliente', nombre: email.split('@')[0], email, telefono: '' }),
+      }).catch(() => {})
     }
   }
 

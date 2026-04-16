@@ -659,6 +659,21 @@ export default function TecnicoPage() {
   const updateEstado = async (solicitudId, estado) => {
     await supabase.from('solicitudes').update({ estado }).eq('id', solicitudId).eq('tecnico_id', tecnico.id)
     setMisSols(prev => prev.map(s => s.id === solicitudId ? { ...s, estado } : s))
+    // Notificar cambio de estado relevante
+    if (estado === 'en_curso' || estado === 'completada') {
+      const sol = misSols.find(s => s.id === solicitudId)
+      if (sol) {
+        fetch('/api/notify/estado', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nuevoEstado: estado,
+            solicitud: sol,
+            tecnico: { nombre: tecnico.nombre, email: tecnico.email, telefono: tecnico.telefono, categoria: tecnico.categoria, ciudad: tecnico.ciudad },
+            cliente: { nombre: sol.cliente_nombre || null, email: sol.cliente_email || null, telefono: sol.cliente_telefono || null },
+          }),
+        }).catch(() => {})
+      }
+    }
   }
 
   const updatePerfil = async (campos) => {

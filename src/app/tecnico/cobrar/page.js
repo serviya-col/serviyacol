@@ -25,6 +25,7 @@ export default function CobrarPage() {
   const [form, setForm] = useState({
     cliente_nombre:   '',
     cliente_telefono: '',
+    cliente_email:    '',
     descripcion:      '',
     valor_raw:        '',
   })
@@ -86,6 +87,7 @@ export default function CobrarPage() {
         tecnico_telefono: tecnico.telefono || '',
         cliente_nombre:   form.cliente_nombre.trim(),
         cliente_telefono: form.cliente_telefono.trim(),
+        cliente_email:    form.cliente_email.trim() || null,
         descripcion:      form.descripcion.trim(),
         valor_total:      valor,
         ciudad:           tecnico.ciudad || '',
@@ -162,7 +164,7 @@ export default function CobrarPage() {
           </a>
 
           <button
-            onClick={() => { setResultado(null); setForm({ cliente_nombre: '', cliente_telefono: '', descripcion: '', valor_raw: '' }) }}
+            onClick={() => { setResultado(null); setForm({ cliente_nombre: '', cliente_telefono: '', cliente_email: '', descripcion: '', valor_raw: '' }) }}
             className="w-full text-white/50 text-sm py-2 hover:text-white transition-colors"
           >
             ← Crear otro cobro
@@ -225,6 +227,20 @@ export default function CobrarPage() {
                 />
               </div>
               <p className="text-xs text-white/30 mt-1">Le enviarás el link directamente a este número.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-white/80 mb-1.5">
+                Correo del cliente <span className="text-white/30 font-normal">(opcional — para envío por email)</span>
+              </label>
+              <input
+                name="cliente_email"
+                type="email"
+                value={form.cliente_email}
+                onChange={handleChange}
+                placeholder="cliente@correo.com"
+                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+              />
             </div>
           </div>
 
