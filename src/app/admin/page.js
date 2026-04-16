@@ -84,12 +84,13 @@ function LoginScreen({ onSuccess }) {
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-function Sidebar({ view, setView, pendientes, sinVerificar, clientesCount, email, onLogout }) {
+function Sidebar({ view, setView, pendientes, sinVerificar, clientesCount, cobrosCount, email, onLogout }) {
   const nav = [
     { id: 'dashboard',   icon: '📊', label: 'Dashboard'   },
     { id: 'solicitudes', icon: '📋', label: 'Solicitudes', badge: pendientes  },
     { id: 'clientes',    icon: '🧑‍💼', label: 'Clientes',    badge: clientesCount },
     { id: 'tecnicos',    icon: '👷', label: 'Técnicos',    badge: sinVerificar },
+    { id: 'cobros',      icon: '💳', label: 'Cobros',      badge: cobrosCount  },
   ]
   return (
     <aside className="w-56 bg-[#0A1A14] flex flex-col min-h-screen sticky top-0 flex-shrink-0 border-r border-white/5">
@@ -119,6 +120,123 @@ function Sidebar({ view, setView, pendientes, sinVerificar, clientesCount, email
         ><span>🚪</span> Cerrar sesión</button>
       </div>
     </aside>
+  )
+}
+
+// ─── CobrosView ────────────────────────────────────────────────────────────────
+function CobrosView({ cobros, onMarcarPagado }) {
+  const fmt = (v) => '$' + Number(v || 0).toLocaleString('es-CO')
+
+  const ESTADO_COBRO = {
+    pendiente:    { label: 'Pendiente',    cls: 'bg-amber-50  text-amber-700  border border-amber-200'  },
+    pagado:       { label: 'Pagado',       cls: 'bg-green-50  text-green-700  border border-green-200'  },
+    fallido:      { label: 'Fallido',      cls: 'bg-red-50    text-red-700    border border-red-200'    },
+    reembolsado:  { label: 'Reembolsado', cls: 'bg-purple-50 text-purple-700 border border-purple-200' },
+  }
+
+  // KPIs
+  const pagados      = cobros.filter(c => c.estado === 'pagado')
+  const totalProcess = pagados.reduce((s, c) => s + (c.valor_total || 0), 0)
+  const totalComision = pagados.reduce((s, c) => s + (c.valor_comision || 0), 0)
+  const pendPago     = pagados.filter(c => !c.pagado_tecnico).reduce((s, c) => s + (c.valor_tecnico || 0), 0)
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="mb-6">
+        <h2 className="text-xl font-extrabold text-gray-900">Cobros y pagos</h2>
+        <p className="text-sm text-gray-400 mt-0.5">Historial de cobros generados por técnicos con Bold</p>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="text-2xl mb-2">💰</div>
+          <div className="text-2xl font-extrabold text-emerald-600">{fmt(totalProcess)}</div>
+          <div className="text-xs text-gray-400 mt-1">Total procesado</div>
+        </div>
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="text-2xl mb-2">🏦</div>
+          <div className="text-2xl font-extrabold text-blue-600">{fmt(totalComision)}</div>
+          <div className="text-xs text-gray-400 mt-1">Comisiones ServiYa</div>
+        </div>
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div className="text-2xl mb-2">⏳</div>
+          <div className="text-2xl font-extrabold text-amber-600">{fmt(pendPago)}</div>
+          <div className="text-xs text-gray-400 mt-1">Pendiente por pagar a técnicos</div>
+        </div>
+      </div>
+
+      {/* Tabla */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {cobros.length === 0 ? (
+          <div className="py-20 text-center text-gray-400">
+            <div className="text-4xl mb-3">💳</div>
+            <p className="font-semibold">Aún no hay cobros</p>
+            <p className="text-sm mt-1">Los cobros aparecerán aquí cuando los técnicos generen links de pago.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Referencia</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Técnico / Cliente</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Servicio</th>
+                  <th className="text-right px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Pagó cliente</th>
+                  <th className="text-right px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Comisión</th>
+                  <th className="text-right px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Para técnico</th>
+                  <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {cobros.map(c => {
+                  const cfg = ESTADO_COBRO[c.estado] || { label: c.estado, cls: 'bg-gray-100 text-gray-600' }
+                  return (
+                    <tr key={c.id} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{c.referencia}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-gray-800 text-xs">{c.tecnico_nombre}</p>
+                        <p className="text-gray-400 text-xs mt-0.5">→ {c.cliente_nombre}</p>
+                      </td>
+                      <td className="px-4 py-3 max-w-[180px]">
+                        <p className="text-gray-700 text-xs truncate">{c.descripcion}</p>
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold text-gray-800">{fmt(c.valor_total)}</td>
+                      <td className="px-4 py-3 text-right text-amber-600 font-semibold">{fmt(c.valor_comision)}</td>
+                      <td className="px-4 py-3 text-right text-emerald-600 font-bold">{fmt(c.valor_tecnico)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.cls}`}>{cfg.label}</span>
+                        {c.pagado_tecnico && (
+                          <span className="ml-1 inline-flex text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">✓ Tec. pagado</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {c.estado === 'pagado' && !c.pagado_tecnico && (
+                          <button
+                            onClick={() => onMarcarPagado(c.id)}
+                            className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg font-semibold transition-all whitespace-nowrap"
+                          >
+                            Marcar técnico pagado
+                          </button>
+                        )}
+                        {c.bold_link && (
+                          <a href={c.bold_link} target="_blank" rel="noopener noreferrer"
+                            className="block text-xs text-blue-500 hover:underline mt-1"
+                          >Ver link →</a>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -701,6 +819,7 @@ export default function AdminPage() {
   const [tecnicos, setT]        = useState([])
   const [pagosByTecnico, setPagosByTecnico] = useState({})
   const [clientesDb, setC]      = useState([])
+  const [cobros, setCobros]     = useState([])
   const [dataLoading, setDL]    = useState(false)
 
   const clientes = useMemo(() => {
@@ -786,7 +905,8 @@ export default function AdminPage() {
       supabase.from('tecnicos').select('*').order('created_at', { ascending: false }),
       supabase.from('tecnico_pagos').select('*'),
       supabase.from('clientes').select('*').order('updated_at', { ascending: false }),
-    ]).then(([{ data: s }, { data: t }, { data: pagos }, { data: c }]) => {
+      supabase.from('cobros').select('*').order('created_at', { ascending: false }),
+    ]).then(([{ data: s }, { data: t }, { data: pagos }, { data: c }, { data: co }]) => {
       setS(s || [])
       setT(t || [])
       const byTecnico = (pagos || []).reduce((acc, p) => {
@@ -795,6 +915,7 @@ export default function AdminPage() {
       }, {})
       setPagosByTecnico(byTecnico)
       setC(c || [])
+      setCobros(co || [])
       setDL(false)
     })
   }, [user])
@@ -817,6 +938,10 @@ export default function AdminPage() {
     await supabase.from('tecnicos').update({ activo }).eq('id', id)
     setT(prev => prev.map(t => t.id === id ? { ...t, activo } : t))
   }
+  const marcarTecnicoPagado = async (id) => {
+    await supabase.from('cobros').update({ pagado_tecnico: true, fecha_pago_tecnico: new Date().toISOString() }).eq('id', id)
+    setCobros(prev => prev.map(c => c.id === id ? { ...c, pagado_tecnico: true } : c))
+  }
   const logout = async () => { await supabase.auth.signOut(); setUser(null) }
 
   if (authLoading) return (
@@ -833,6 +958,7 @@ export default function AdminPage() {
         pendientes={solicitudes.filter(s => s.estado === 'pendiente').length}
         sinVerificar={tecnicos.filter(t => !t.verificado).length}
         clientesCount={clientes.length}
+        cobrosCount={cobros.filter(c => c.estado === 'pagado' && !c.pagado_tecnico).length}
         email={user.email} onLogout={logout}
       />
       <main className="flex-1 bg-gray-50 min-h-screen overflow-auto">
@@ -846,6 +972,8 @@ export default function AdminPage() {
           <SolicitudesView solicitudes={solicitudes} tecnicos={tecnicos} onUpdateEstado={updateEstado} onAsignarTecnico={asignarTecnico} />
         ) : view === 'clientes' ? (
           <ClientesView clientes={clientes} />
+        ) : view === 'cobros' ? (
+          <CobrosView cobros={cobros} onMarcarPagado={marcarTecnicoPagado} />
         ) : (
           <TecnicosView tecnicos={tecnicos} pagosByTecnico={pagosByTecnico} onVerificar={verificarTecnico} onActivar={activarTecnico} />
         )}

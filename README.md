@@ -31,7 +31,7 @@ Edita `.env.local` con tus credenciales reales:
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
-NEXT_PUBLIC_WOMPI_PUBLIC_KEY=pub_test_XXXXXXXX
+NEXT_PUBLIC_BOLD_PUBLIC_KEY=pub_test_XXXXXXXX
 ```
 
 ---
@@ -80,7 +80,7 @@ const ADMIN_PASS = 'tu-contraseña-segura'
 
 ## Próximos pasos (Fase 2)
 
-- [ ] Integrar Wompi para cobro de visita
+- [ ] Integrar Bold para cobro de visita
 - [ ] Notificaciones por WhatsApp API cuando llega solicitud
 - [ ] Listado público de técnicos por ciudad
 - [ ] Sistema de reseñas post-servicio

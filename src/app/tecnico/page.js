@@ -158,7 +158,13 @@ function Sidebar({ view, setView, tecnico, disponiblesCount, onLogout }) {
           </button>
         ))}
       </nav>
-      <div className="px-3 py-4 border-t border-white/8">
+      <div className="px-3 py-4 border-t border-white/8 space-y-2">
+        <Link
+          href="/tecnico/cobrar"
+          className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl transition-all text-sm shadow-lg shadow-emerald-900/30"
+        >
+          💳 Cobrar servicio
+        </Link>
         <button onClick={onLogout}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
         ><span>🚪</span> Cerrar sesión</button>
@@ -219,6 +225,20 @@ function DashboardView({ tecnico, misSolicitudes, disponiblesCount, setView }) {
           >Ver solicitudes →</button>
         </div>
       )}
+
+      {/* Cobrar CTA */}
+      <Link href="/tecnico/cobrar"
+        className="flex items-center gap-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 rounded-2xl p-5 mb-5 transition-all active:scale-95 shadow-lg shadow-emerald-900/30"
+      >
+        <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">💳</div>
+        <div className="flex-1">
+          <p className="font-extrabold text-white text-base">Cobrar un servicio</p>
+          <p className="text-emerald-100/80 text-sm mt-0.5">Genera un link de pago y envíalo al cliente por WhatsApp</p>
+        </div>
+        <svg className="w-5 h-5 text-white/60 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </Link>
       {/* Info perfil quick */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <p className="text-sm font-bold text-gray-700 mb-3">Mi información</p>

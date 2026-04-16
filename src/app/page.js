@@ -65,7 +65,7 @@ const FAQS = [
   },
   {
     q: '¿Puedo pagar en línea?',
-    a: 'Sí. Contamos con pago seguro a través de Wompi (tarjeta débito, crédito, PSE y Nequi). También puedes pagar directamente al técnico en efectivo.',
+    a: 'Sí. Contamos con pago seguro a través de Bold (tarjeta débito, crédito, PSE y Nequi). También puedes pagar directamente al técnico en efectivo.',
   },
 ]
 
