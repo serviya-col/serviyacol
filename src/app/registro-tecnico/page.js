@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Navbar from '@/components/Navbar'
 import Link from 'next/link'
+import LegalModal from '@/components/LegalModal'
 
 const CIUDADES = [
   'Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena',
@@ -39,6 +40,7 @@ export default function RegistroTecnico() {
   const [cedulaPosterior, setCedulaPosterior]   = useState(null) // File object
   const [previewFrontal, setPreviewFrontal]     = useState(null)
   const [previewPosterior, setPreviewPosterior] = useState(null)
+  const [legalModal, setLegalModal]             = useState(null)
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -476,10 +478,13 @@ export default function RegistroTecnico() {
 
           <p className="text-xs text-gray-400 text-center">
             Al registrarte aceptas nuestros{' '}
-            <a href="#" className="text-brand hover:underline">Términos y Condiciones</a>. 🔒
+            <button type="button" onClick={() => setLegalModal('terminos')} className="text-brand hover:underline">Términos y Condiciones</button> y nuestra{' '}
+            <button type="button" onClick={() => setLegalModal('privacidad')} className="text-brand hover:underline">Política de Privacidad</button>. 🔒
           </p>
         </form>
       </div>
+
+      <LegalModal type={legalModal} onClose={() => setLegalModal(null)} />
     </>
   )
 }

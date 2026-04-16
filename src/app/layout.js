@@ -8,6 +8,14 @@ const inter = Inter({
   display: 'swap',
 })
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#071A14',
+}
+
 export const metadata = {
   title: 'ServiYa — Técnicos verificados a domicilio en Colombia',
   description:

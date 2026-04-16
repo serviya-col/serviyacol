@@ -16,7 +16,7 @@ export default function WhatsAppButton() {
   const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
 
   return (
-    <div className="fixed bottom-6 right-5 z-50 flex items-center gap-3">
+    <div className="fixed bottom-6 right-5 z-50 flex items-center gap-3" style={{ bottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}>
       {/* Tooltip */}
       <div
         className={`transition-all duration-300 ${

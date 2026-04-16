@@ -353,15 +353,15 @@ export default function Home() {
 
       {/* ── FOOTER ── */}
       <footer className="bg-[#071A14] text-white/60">
-        <div className="max-w-5xl mx-auto px-4 pt-14 pb-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-            {/* Brand */}
+        <div className="max-w-5xl mx-auto px-4 pt-12 pb-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+            {/* Brand — full width on mobile */}
             <div className="col-span-2 md:col-span-1">
               <span className="text-2xl font-extrabold text-white">
                 <span className="text-brand-light">Servi</span>Ya
               </span>
-              <p className="text-xs leading-relaxed mt-3 max-w-[180px] text-white/50">
-                Conectamos hogares con técnicos verificados en toda Colombia.
+              <p className="text-xs leading-relaxed mt-3 max-w-[220px] text-white/50">
+                Conectamos hogares con técnicos verificados en toda Colombia. Renting Amc Agency · NIT 1075293497-7.
               </p>
               {/* Social icons */}
               <div className="flex gap-3 mt-4">
@@ -370,7 +370,7 @@ export default function Home() {
                     key={red}
                     href="#"
                     aria-label={red}
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-xs text-white/50 hover:text-white transition-colors"
+                    className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-xs text-white/50 hover:text-white transition-colors"
                   >
                     {red[0]}
                   </a>
@@ -381,44 +381,43 @@ export default function Home() {
             {/* Para clientes */}
             <div>
               <p className="text-xs font-bold text-white uppercase tracking-wider mb-4">Para clientes</p>
-              <ul className="space-y-2.5">
-                <li><Link href="/solicitar" className="text-xs hover:text-white transition-colors">Solicitar técnico</Link></li>
-                <li><Link href="/#servicios" className="text-xs hover:text-white transition-colors">Ver servicios</Link></li>
-                <li><Link href="/#como-funciona" className="text-xs hover:text-white transition-colors">Cómo funciona</Link></li>
-                <li><Link href="/#faq" className="text-xs hover:text-white transition-colors">Preguntas frecuentes</Link></li>
+              <ul className="space-y-3">
+                <li><Link href="/solicitar" className="text-xs hover:text-white transition-colors py-0.5 block">Solicitar técnico</Link></li>
+                <li><Link href="/#servicios" className="text-xs hover:text-white transition-colors py-0.5 block">Ver servicios</Link></li>
+                <li><Link href="/#como-funciona" className="text-xs hover:text-white transition-colors py-0.5 block">Cómo funciona</Link></li>
+                <li><Link href="/#faq" className="text-xs hover:text-white transition-colors py-0.5 block">Preguntas frecuentes</Link></li>
               </ul>
             </div>
 
             {/* Para técnicos */}
             <div>
               <p className="text-xs font-bold text-white uppercase tracking-wider mb-4">Para técnicos</p>
-              <ul className="space-y-2.5">
-                <li><Link href="/registro-tecnico" className="text-xs hover:text-white transition-colors">Registrarme gratis</Link></li>
-                <li><a href="#" className="text-xs hover:text-white transition-colors">Beneficios</a></li>
-                <li><Link href="/#como-funciona" className="text-xs hover:text-white transition-colors">Cómo funciona</Link></li>
-                <li><Link href="/tecnico" className="text-xs hover:text-white transition-colors">Panel de técnico</Link></li>
+              <ul className="space-y-3">
+                <li><Link href="/registro-tecnico" className="text-xs hover:text-white transition-colors py-0.5 block">Registrarme gratis</Link></li>
+                <li><Link href="/#como-funciona" className="text-xs hover:text-white transition-colors py-0.5 block">Cómo funciona</Link></li>
+                <li><Link href="/tecnico" className="text-xs hover:text-white transition-colors py-0.5 block">Panel de técnico</Link></li>
               </ul>
             </div>
 
             {/* Empresa */}
             <div>
               <p className="text-xs font-bold text-white uppercase tracking-wider mb-4">Empresa</p>
-              <ul className="space-y-2.5">
-                {['Sobre nosotros', 'Términos de uso', 'Privacidad', 'Contacto'].map((l) => (
-                  <li key={l}>
-                    <a href="#" className="text-xs hover:text-white transition-colors">{l}</a>
-                  </li>
-                ))}
+              <ul className="space-y-3">
+                <li><Link href="/terminos" className="text-xs hover:text-white transition-colors py-0.5 block">Términos de uso</Link></li>
+                <li><Link href="/privacidad" className="text-xs hover:text-white transition-colors py-0.5 block">Privacidad</Link></li>
+                <li><a href="mailto:soporte@serviyacol.com" className="text-xs hover:text-white transition-colors py-0.5 block">Contacto</a></li>
+                <li><a href="https://wa.me/573138537261" target="_blank" rel="noopener noreferrer" className="text-xs hover:text-white transition-colors py-0.5 block">WhatsApp</a></li>
               </ul>
             </div>
           </div>
 
-          <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
-            <p>© 2026 ServiYa · Colombia · Todos los derechos reservados</p>
+          <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-center">
+            <p>© 2026 ServiYa by Renting Amc Agency · Todos los derechos reservados</p>
             <p>Hecho con ❤️ en Colombia 🇨🇴</p>
           </div>
         </div>
       </footer>
+
     </>
   )
 }

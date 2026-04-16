@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Navbar from '@/components/Navbar'
 import Link from 'next/link'
+import LegalModal from '@/components/LegalModal'
 
 const CIUDADES = [
   'Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena',
@@ -36,6 +37,7 @@ function SolicitarForm() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [authEmail, setAuthEmail] = useState('')
+  const [legalModal, setLegalModal] = useState(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -351,11 +353,14 @@ function SolicitarForm() {
 
           <p className="text-xs text-gray-400 text-center">
             Al enviar aceptas nuestros{' '}
-            <a href="#" className="text-brand hover:underline">Términos y Condiciones</a>.
+            <button type="button" onClick={() => setLegalModal('terminos')} className="text-brand hover:underline">Términos y Condiciones</button> y nuestra{' '}
+            <button type="button" onClick={() => setLegalModal('privacidad')} className="text-brand hover:underline">Política de Privacidad</button>.
             Tu información es privada y segura. 🔒
           </p>
         </form>
       )}
+
+      <LegalModal type={legalModal} onClose={() => setLegalModal(null)} />
     </div>
   )
 }
