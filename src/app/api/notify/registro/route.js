@@ -21,6 +21,17 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Tipo inválido. Usa "cliente" o "tecnico".' }, { status: 400 })
     }
 
+    // ── Track Meta CompleteRegistration via CAPI ────────────────────────────
+    const { sendMetaEvent } = await import('@/lib/meta-capi')
+    await sendMetaEvent('CompleteRegistration', {
+      content_name: tipo === 'tecnico' ? 'Registro Técnico' : 'Registro Cliente',
+    }, {
+      email,
+      telefono,
+      client_ip: req.headers.get('x-forwarded-for')?.split(',')[0] || undefined,
+      client_user_agent: req.headers.get('user-agent') || undefined
+    })
+
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[api/notify/registro]', err)

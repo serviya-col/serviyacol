@@ -83,6 +83,12 @@ function SolicitarForm() {
       setError('Error al enviar la solicitud. Intenta de nuevo.')
     } else {
       setSuccess(true)
+      if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'Lead', {
+          content_name: form.categoria,
+          ciudad: form.ciudad
+        })
+      }
     }
   }
 

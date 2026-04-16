@@ -84,7 +84,21 @@ export async function POST(req) {
                 cobro.tecnico_telefono = cobro.tecnico_telefono || tec.telefono
               }
             }
-            if (cobro) await notifyPagoConfirmado({ cobro })
+            if (cobro) {
+              await notifyPagoConfirmado({ cobro })
+              
+              // ── Track Meta Purchase via CAPI ──────────────────────────────────────
+              const { sendMetaEvent } = await import('@/lib/meta-capi')
+              await sendMetaEvent('Purchase', {
+                currency: 'COP',
+                value: cobro.valor_total,
+                content_name: cobro.descripcion || 'Servicio ServiYa',
+                order_id: cobro.referencia
+              }, {
+                email: cobro.tecnico_email,
+                telefono: cobro.tecnico_telefono
+              })
+            }
           } catch (notifyErr) {
             console.warn('Notify pago error:', notifyErr.message)
           }
