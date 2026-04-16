@@ -111,7 +111,7 @@ function LoginScreen({ onSuccess }) {
   )
 }
 
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
+// ─── Sidebar / Mobile Nav ──────────────────────────────────────────────────────────────────
 function Sidebar({ view, setView, tecnico, disponiblesCount, onLogout }) {
   const nav = [
     { id: 'dashboard',   icon: '🏠', label: 'Mi panel'       },
@@ -120,58 +120,117 @@ function Sidebar({ view, setView, tecnico, disponiblesCount, onLogout }) {
     { id: 'perfil',      icon: '👤', label: 'Mi perfil'       },
   ]
   return (
-    <aside className="w-56 bg-[#0A1A14] flex flex-col min-h-screen sticky top-0 flex-shrink-0 border-r border-white/5">
-      <div className="px-5 py-5 border-b border-white/8">
-        <span className="text-xl font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya</span>
-        <span className="text-white/25 text-xs ml-2">Técnico</span>
-      </div>
-      {/* Tecnico info */}
-      <div className="px-5 py-4 border-b border-white/8">
-        <div className="w-10 h-10 rounded-full bg-emerald-600/20 overflow-hidden flex items-center justify-center text-emerald-400 font-extrabold text-lg mb-2">
-          {tecnico?.foto_perfil_url ? (
-            <img src={tecnico.foto_perfil_url} alt={tecnico?.nombre || 'Técnico'} className="w-full h-full object-cover" />
-          ) : (
-            <span>{tecnico?.nombre?.charAt(0) || '?'}</span>
-          )}
+    <>
+      {/* ── Desktop sidebar ──────────────────────────────────────────────── */}
+      <aside className="hidden md:flex w-56 bg-[#0A1A14] flex-col min-h-screen sticky top-0 flex-shrink-0 border-r border-white/5">
+        <div className="px-5 py-5 border-b border-white/8">
+          <span className="text-xl font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya</span>
+          <span className="text-white/25 text-xs ml-2">Técnico</span>
         </div>
-        <p className="text-sm font-bold text-white truncate">{tecnico?.nombre}</p>
-        <p className="text-xs text-white/30 truncate">{tecnico?.categoria} · {tecnico?.ciudad}</p>
-        <div className="mt-1.5">
-          {tecnico?.verificado
-            ? <span className="text-xs bg-green-500/20 text-green-400 font-semibold px-2 py-0.5 rounded-full">✓ Verificado</span>
-            : <span className="text-xs bg-amber-500/20 text-amber-400 font-semibold px-2 py-0.5 rounded-full">⏳ En revisión</span>
+        {/* Tecnico info */}
+        <div className="px-5 py-4 border-b border-white/8">
+          <div className="w-10 h-10 rounded-full bg-emerald-600/20 overflow-hidden flex items-center justify-center text-emerald-400 font-extrabold text-lg mb-2">
+            {tecnico?.foto_perfil_url ? (
+              <img src={tecnico.foto_perfil_url} alt={tecnico?.nombre || 'Técnico'} className="w-full h-full object-cover" />
+            ) : (
+              <span>{tecnico?.nombre?.charAt(0) || '?'}</span>
+            )}
+          </div>
+          <p className="text-sm font-bold text-white truncate">{tecnico?.nombre}</p>
+          <p className="text-xs text-white/30 truncate">{tecnico?.categoria} · {tecnico?.ciudad}</p>
+          <div className="mt-1.5">
+            {tecnico?.verificado
+              ? <span className="text-xs bg-green-500/20 text-green-400 font-semibold px-2 py-0.5 rounded-full">✓ Verificado</span>
+              : <span className="text-xs bg-amber-500/20 text-amber-400 font-semibold px-2 py-0.5 rounded-full">⏳ En revisión</span>
+            }
+          </div>
+        </div>
+        <nav className="flex-1 px-3 py-4 space-y-1">
+          {nav.map(item => (
+            <button key={item.id} onClick={() => setView(item.id)} disabled={!tecnico?.verificado && item.id !== 'perfil'}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left disabled:opacity-30 disabled:cursor-not-allowed ${
+                view === item.id ? 'bg-emerald-600/20 text-emerald-400' : 'text-white/40 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span className="text-base">{item.icon}</span>
+              <span className="flex-1">{item.label}</span>
+              {item.badge > 0 && (
+                <span className="bg-emerald-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{item.badge}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+        <div className="px-3 py-4 border-t border-white/8 space-y-2">
+          <Link
+            href="/tecnico/cobrar"
+            className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl transition-all text-sm shadow-lg shadow-emerald-900/30"
+          >
+            💳 Cobrar servicio
+          </Link>
+          <button onClick={onLogout}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+          ><span>🚪</span> Cerrar sesión</button>
+        </div>
+      </aside>
+
+      {/* ── Mobile: sticky top header ──────────────────────────────────────── */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0A1A14]/95 backdrop-blur-md border-b border-white/8 flex items-center px-4 py-3 gap-3">
+        <div className="w-9 h-9 rounded-full bg-emerald-600/20 overflow-hidden flex items-center justify-center text-emerald-400 font-extrabold text-base flex-shrink-0">
+          {tecnico?.foto_perfil_url
+            ? <img src={tecnico.foto_perfil_url} alt={tecnico.nombre} className="w-full h-full object-cover" />
+            : <span>{tecnico?.nombre?.charAt(0) || '?'}</span>
           }
         </div>
-      </div>
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {nav.map(item => (
-          <button key={item.id} onClick={() => setView(item.id)} disabled={!tecnico?.verificado && item.id !== 'perfil'}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left disabled:opacity-30 disabled:cursor-not-allowed ${
-              view === item.id ? 'bg-emerald-600/20 text-emerald-400' : 'text-white/40 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <span className="text-base">{item.icon}</span>
-            <span className="flex-1">{item.label}</span>
-            {item.badge > 0 && (
-              <span className="bg-emerald-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{item.badge}</span>
-            )}
-          </button>
-        ))}
-      </nav>
-      <div className="px-3 py-4 border-t border-white/8 space-y-2">
-        <Link
-          href="/tecnico/cobrar"
-          className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl transition-all text-sm shadow-lg shadow-emerald-900/30"
-        >
-          💳 Cobrar servicio
-        </Link>
-        <button onClick={onLogout}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
-        ><span>🚪</span> Cerrar sesión</button>
-      </div>
-    </aside>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-white truncate">{tecnico?.nombre}</p>
+          <p className="text-xs text-white/40 truncate">{tecnico?.categoria}</p>
+        </div>
+        {tecnico?.verificado
+          ? <span className="text-[10px] bg-green-500/20 text-green-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✓ Activo</span>
+          : <span className="text-[10px] bg-amber-500/20 text-amber-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">⏳ Revisión</span>
+        }
+        <button onClick={onLogout} className="text-white/30 hover:text-red-400 transition-colors p-1 flex-shrink-0">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+        </button>
+      </header>
+    </>
   )
 }
+
+/* ── Mobile bottom tab bar ───────────────────────────────────────────────── */
+function TecnicoBottomNav({ view, setView, disponiblesCount, verificado }) {
+  const tabs = [
+    { id: 'dashboard',   icon: '🏠', label: 'Panel'      },
+    { id: 'disponibles', icon: '📋', label: 'Disponibles', badge: disponiblesCount },
+    { id: 'mias',        icon: '✅', label: 'Mis trabajos' },
+    { id: 'perfil',      icon: '👤', label: 'Perfil'      },
+  ]
+  return (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0A1A14]/95 backdrop-blur-md border-t border-white/8 flex">
+      {tabs.map(tab => (
+        <button key={tab.id}
+          onClick={() => setView(tab.id)}
+          disabled={!verificado && tab.id !== 'perfil'}
+          className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 relative transition-all disabled:opacity-30 ${
+            view === tab.id ? 'text-emerald-400' : 'text-white/30'
+          }`}
+        >
+          <span className="text-lg leading-none">{tab.icon}</span>
+          <span className={`text-[10px] font-semibold leading-none mt-0.5`}>{tab.label}</span>
+          {tab.badge > 0 && (
+            <span className="absolute top-1.5 right-[calc(50%-10px)] bg-emerald-500 text-white text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-1">
+              {tab.badge}
+            </span>
+          )}
+          {view === tab.id && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-emerald-400 rounded-full" />}
+        </button>
+      ))}
+    </nav>
+  )
+}
+
 
 // ─── Dashboard Técnico ────────────────────────────────────────────────────────
 function DashboardView({ tecnico, misSolicitudes, disponiblesCount, setView }) {
@@ -623,9 +682,21 @@ export default function TecnicoPage() {
   if (!user || !tecnico) return <LoginScreen onSuccess={onLogin} />
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar view={view} setView={setView} tecnico={tecnico} disponiblesCount={disponibles.length} onLogout={logout} />
-      <main className="flex-1 bg-gray-50 min-h-screen overflow-auto">
+      {/* Mobile bottom nav */}
+      <TecnicoBottomNav view={view} setView={setView} disponiblesCount={disponibles.length} verificado={tecnico?.verificado} />
+      {/* Floating Cobrar button — mobile only */}
+      {tecnico?.verificado && (
+        <Link
+          href="/tecnico/cobrar"
+          className="md:hidden fixed bottom-20 right-4 z-50 bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-5 py-3.5 rounded-2xl shadow-xl shadow-emerald-900/50 flex items-center gap-2 text-sm active:scale-95 transition-all"
+        >
+          💳 Cobrar
+        </Link>
+      )}
+      {/* pt-14 on mobile: space for fixed header. pb-20 on mobile: space for bottom nav */}
+      <main className="flex-1 min-h-screen overflow-auto pt-14 pb-24 md:pt-0 md:pb-0">
         {view === 'dashboard'   && <DashboardView tecnico={tecnico} misSolicitudes={misSols} disponiblesCount={disponibles.length} setView={setView} />}
         {view === 'disponibles' && <DisponiblesView disponibles={disponibles} onAceptar={aceptar} />}
         {view === 'mias'        && <MiasSolicitudesView solicitudes={misSols} onUpdateEstado={updateEstado} />}

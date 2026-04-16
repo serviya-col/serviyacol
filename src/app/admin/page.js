@@ -83,8 +83,10 @@ function LoginScreen({ onSuccess }) {
   )
 }
 
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
+// ─── Sidebar / Mobile Nav ──────────────────────────────────────────────────────
 function Sidebar({ view, setView, pendientes, sinVerificar, clientesCount, cobrosCount, email, onLogout }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   const nav = [
     { id: 'dashboard',   icon: '📊', label: 'Dashboard'   },
     { id: 'solicitudes', icon: '📋', label: 'Solicitudes', badge: pendientes  },
@@ -92,34 +94,93 @@ function Sidebar({ view, setView, pendientes, sinVerificar, clientesCount, cobro
     { id: 'tecnicos',    icon: '👷', label: 'Técnicos',    badge: sinVerificar },
     { id: 'cobros',      icon: '💳', label: 'Cobros',      badge: cobrosCount  },
   ]
+
+  const handleNav = (id) => { setView(id); setMobileMenuOpen(false) }
+
   return (
-    <aside className="w-56 bg-[#0A1A14] flex flex-col min-h-screen sticky top-0 flex-shrink-0 border-r border-white/5">
-      <div className="px-5 py-5 border-b border-white/8">
-        <span className="text-xl font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya</span>
-        <span className="text-white/25 text-xs ml-2">Admin</span>
-      </div>
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {nav.map(item => (
-          <button key={item.id} onClick={() => setView(item.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
-              view === item.id ? 'bg-emerald-600/20 text-emerald-400' : 'text-white/40 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <span className="text-base">{item.icon}</span>
-            <span className="flex-1">{item.label}</span>
-            {item.badge > 0 && (
-              <span className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{item.badge}</span>
-            )}
+    <>
+      {/* ── Desktop sidebar ─────────────────────────────────── */}
+      <aside className="hidden md:flex w-56 bg-[#0A1A14] flex-col min-h-screen sticky top-0 flex-shrink-0 border-r border-white/5">
+        <div className="px-5 py-5 border-b border-white/8">
+          <span className="text-xl font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya</span>
+          <span className="text-white/25 text-xs ml-2">Admin</span>
+        </div>
+        <nav className="flex-1 px-3 py-4 space-y-1">
+          {nav.map(item => (
+            <button key={item.id} onClick={() => handleNav(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
+                view === item.id ? 'bg-emerald-600/20 text-emerald-400' : 'text-white/40 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span className="text-base">{item.icon}</span>
+              <span className="flex-1">{item.label}</span>
+              {item.badge > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{item.badge}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+        <div className="px-3 py-4 border-t border-white/8 space-y-1.5">
+          <p className="text-[11px] text-white/25 px-3 truncate">{email}</p>
+          <button onClick={onLogout}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+          ><span>🚪</span> Cerrar sesión</button>
+        </div>
+      </aside>
+
+      {/* ── Mobile: sticky top header ─────────────────────────── */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0A1A14]/95 backdrop-blur-md border-b border-white/8 flex items-center justify-between px-4 py-3">
+        <span className="text-lg font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya <span className="text-white/30 text-xs font-normal">Admin</span></span>
+        <div className="flex items-center gap-3">
+          {/* Notif badge total */}
+          {(pendientes + sinVerificar + cobrosCount) > 0 && (
+            <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              {pendientes + sinVerificar + cobrosCount}
+            </span>
+          )}
+          <button onClick={onLogout} className="text-white/40 hover:text-red-400 transition-colors p-1.5">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
           </button>
-        ))}
-      </nav>
-      <div className="px-3 py-4 border-t border-white/8 space-y-1.5">
-        <p className="text-[11px] text-white/25 px-3 truncate">{email}</p>
-        <button onClick={onLogout}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
-        ><span>🚪</span> Cerrar sesión</button>
-      </div>
-    </aside>
+        </div>
+      </header>
+    </>
+  )
+}
+
+/* ── Mobile: bottom tab navigation (rendered outside Sidebar in AdminPage) ── */
+function MobileBottomNav({ view, setView, pendientes, sinVerificar, cobrosCount }) {
+  const tabs = [
+    { id: 'dashboard',   icon: '📊', label: 'Panel' },
+    { id: 'solicitudes', icon: '📋', label: 'Solicitudes', badge: pendientes  },
+    { id: 'tecnicos',    icon: '👷', label: 'Técnicos',    badge: sinVerificar },
+    { id: 'cobros',      icon: '💳', label: 'Cobros',      badge: cobrosCount  },
+    { id: 'clientes',    icon: '🧑‍💼', label: 'Clientes' },
+  ]
+  return (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0A1A14]/95 backdrop-blur-md border-t border-white/8 flex">
+      {tabs.map(tab => (
+        <button key={tab.id} onClick={() => setView(tab.id)}
+          className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 relative transition-all ${
+            view === tab.id ? 'text-emerald-400' : 'text-white/30'
+          }`}
+        >
+          <span className="text-lg leading-none">{tab.icon}</span>
+          <span className={`text-[10px] font-semibold leading-none mt-0.5 ${view === tab.id ? 'text-emerald-400' : 'text-white/30'}`}>
+            {tab.label}
+          </span>
+          {tab.badge > 0 && (
+            <span className="absolute top-1.5 right-[calc(50%-10px)] bg-red-500 text-white text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-1">
+              {tab.badge}
+            </span>
+          )}
+          {view === tab.id && (
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-emerald-400 rounded-full" />
+          )}
+        </button>
+      ))}
+    </nav>
   )
 }
 
@@ -951,17 +1012,29 @@ export default function AdminPage() {
   )
   if (!user) return <LoginScreen onSuccess={setUser} />
 
+  const pendientesCount = solicitudes.filter(s => s.estado === 'pendiente').length
+  const sinVerificarCount = tecnicos.filter(t => !t.verificado).length
+  const cobrosCount = cobros.filter(c => c.estado === 'pagado' && !c.pagado_tecnico).length
+
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar
         view={view} setView={setView}
-        pendientes={solicitudes.filter(s => s.estado === 'pendiente').length}
-        sinVerificar={tecnicos.filter(t => !t.verificado).length}
+        pendientes={pendientesCount}
+        sinVerificar={sinVerificarCount}
         clientesCount={clientes.length}
-        cobrosCount={cobros.filter(c => c.estado === 'pagado' && !c.pagado_tecnico).length}
+        cobrosCount={cobrosCount}
         email={user.email} onLogout={logout}
       />
-      <main className="flex-1 bg-gray-50 min-h-screen overflow-auto">
+      {/* Mobile bottom nav */}
+      <MobileBottomNav
+        view={view} setView={setView}
+        pendientes={pendientesCount}
+        sinVerificar={sinVerificarCount}
+        cobrosCount={cobrosCount}
+      />
+      {/* pt-14 on mobile: space for fixed header. pb-20 on mobile: space for bottom nav */}
+      <main className="flex-1 min-h-screen overflow-auto pt-14 pb-20 md:pt-0 md:pb-0">
         {dataLoading ? (
           <div className="flex items-center justify-center h-64">
             <span className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin block" />

@@ -147,49 +147,88 @@ function Sidebar({ view, setView, user, onLogout, totalSolicitudes }) {
   ]
 
   return (
-    <aside className="w-56 bg-[#0A1A14] flex flex-col min-h-screen sticky top-0 flex-shrink-0 border-r border-white/5">
-      <div className="px-5 py-5 border-b border-white/8">
-        <span className="text-xl font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya</span>
-        <span className="text-white/25 text-xs ml-2">Cliente</span>
-      </div>
-
-      <div className="px-5 py-4 border-b border-white/8">
-        <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-emerald-400 font-extrabold text-lg mb-2">
-          {user?.email?.charAt(0)?.toUpperCase() || '?'}
+    <>
+      {/* ── Desktop sidebar ───────────────────────────────────────────── */}
+      <aside className="hidden md:flex w-56 bg-[#0A1A14] flex-col min-h-screen sticky top-0 flex-shrink-0 border-r border-white/5">
+        <div className="px-5 py-5 border-b border-white/8">
+          <span className="text-xl font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya</span>
+          <span className="text-white/25 text-xs ml-2">Cliente</span>
         </div>
-        <p className="text-xs text-white/30 truncate">Cuenta</p>
-        <p className="text-sm font-bold text-white truncate">{user?.email}</p>
-      </div>
+        <div className="px-5 py-4 border-b border-white/8">
+          <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-emerald-400 font-extrabold text-lg mb-2">
+            {user?.email?.charAt(0)?.toUpperCase() || '?'}
+          </div>
+          <p className="text-xs text-white/30 truncate">Cuenta</p>
+          <p className="text-sm font-bold text-white truncate">{user?.email}</p>
+        </div>
+        <nav className="flex-1 px-3 py-4 space-y-1">
+          {nav.map(item => (
+            <button key={item.id} onClick={() => setView(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
+                view === item.id ? 'bg-emerald-600/20 text-emerald-400' : 'text-white/40 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span className="text-base">{item.icon}</span>
+              <span className="flex-1">{item.label}</span>
+              {item.badge > 0 && (
+                <span className="bg-emerald-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{item.badge}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+        <div className="px-3 py-4 border-t border-white/8">
+          <button onClick={onLogout}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+          ><span>🚪</span> Cerrar sesión</button>
+        </div>
+      </aside>
 
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {nav.map(item => (
-          <button
-            key={item.id}
-            onClick={() => setView(item.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
-              view === item.id ? 'bg-emerald-600/20 text-emerald-400' : 'text-white/40 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <span className="text-base">{item.icon}</span>
-            <span className="flex-1">{item.label}</span>
-            {item.badge > 0 && (
-              <span className="bg-emerald-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{item.badge}</span>
-            )}
+      {/* ── Mobile: sticky top header ────────────────────────────────────── */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0A1A14]/95 backdrop-blur-md border-b border-white/8 flex items-center justify-between px-4 py-3">
+        <span className="text-lg font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya <span className="text-white/30 text-xs font-normal">Cliente</span></span>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-emerald-600/20 flex items-center justify-center text-emerald-400 font-bold text-sm">
+            {user?.email?.charAt(0)?.toUpperCase() || '?'}
+          </div>
+          <button onClick={onLogout} className="text-white/30 hover:text-red-400 transition-colors p-1">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
           </button>
-        ))}
-      </nav>
-
-      <div className="px-3 py-4 border-t border-white/8">
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
-        >
-          <span>🚪</span> Cerrar sesión
-        </button>
-      </div>
-    </aside>
+        </div>
+      </header>
+    </>
   )
 }
+
+function ClienteBottomNav({ view, setView, totalSolicitudes }) {
+  const tabs = [
+    { id: 'dashboard',   icon: '🏠', label: 'Panel'       },
+    { id: 'solicitudes', icon: '📋', label: 'Solicitudes', badge: totalSolicitudes },
+    { id: 'perfil',      icon: '👤', label: 'Mi cuenta'   },
+  ]
+  return (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0A1A14]/95 backdrop-blur-md border-t border-white/8 flex">
+      {tabs.map(tab => (
+        <button key={tab.id} onClick={() => setView(tab.id)}
+          className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 relative transition-all ${
+            view === tab.id ? 'text-emerald-400' : 'text-white/30'
+          }`}
+        >
+          <span className="text-xl leading-none">{tab.icon}</span>
+          <span className="text-[10px] font-semibold leading-none mt-0.5">{tab.label}</span>
+          {tab.badge > 0 && (
+            <span className="absolute top-1.5 right-[calc(50%-12px)] bg-emerald-500 text-white text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-1">
+              {tab.badge}
+            </span>
+          )}
+          {view === tab.id && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-emerald-400 rounded-full" />}
+        </button>
+      ))}
+    </nav>
+  )
+}
+
 
 function DashboardView({ user, solicitudes, setView }) {
   const kpis = [
@@ -525,15 +564,11 @@ export default function ClientePage() {
   if (!user) return <AuthScreen onSuccess={setUser} forcedError={accessError} />
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar
-        view={view}
-        setView={setView}
-        user={user}
-        onLogout={logout}
-        totalSolicitudes={totalSolicitudes}
-      />
-      <main className="flex-1 bg-gray-50 min-h-screen overflow-auto">
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar view={view} setView={setView} user={user} onLogout={logout} totalSolicitudes={totalSolicitudes} />
+      <ClienteBottomNav view={view} setView={setView} totalSolicitudes={totalSolicitudes} />
+      {/* pt-14 mobile: space for fixed header. pb-20 mobile: space for bottom nav */}
+      <main className="flex-1 min-h-screen overflow-auto pt-14 pb-20 md:pt-0 md:pb-0">
         {view === 'dashboard' && <DashboardView user={user} solicitudes={solicitudes} setView={setView} />}
         {view === 'solicitudes' && <SolicitudesView solicitudes={solicitudes} tecnicosById={tecnicosById} onCancelar={cancelarSolicitud} />}
         {view === 'perfil' && <PerfilView user={user} cliente={cliente} />}
