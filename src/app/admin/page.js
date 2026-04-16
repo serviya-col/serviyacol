@@ -187,116 +187,94 @@ function MobileBottomNav({ view, setView, pendientes, sinVerificar, cobrosCount 
 // ─── CobrosView ────────────────────────────────────────────────────────────────
 function CobrosView({ cobros, onMarcarPagado }) {
   const fmt = (v) => '$' + Number(v || 0).toLocaleString('es-CO')
-
   const ESTADO_COBRO = {
-    pendiente:    { label: 'Pendiente',    cls: 'bg-amber-50  text-amber-700  border border-amber-200'  },
-    pagado:       { label: 'Pagado',       cls: 'bg-green-50  text-green-700  border border-green-200'  },
-    fallido:      { label: 'Fallido',      cls: 'bg-red-50    text-red-700    border border-red-200'    },
-    reembolsado:  { label: 'Reembolsado', cls: 'bg-purple-50 text-purple-700 border border-purple-200' },
+    pendiente:   { label: 'Pendiente',   cls: 'bg-amber-50  text-amber-700  border border-amber-200'  },
+    pagado:      { label: 'Pagado',      cls: 'bg-green-50  text-green-700  border border-green-200'  },
+    fallido:     { label: 'Fallido',     cls: 'bg-red-50    text-red-700    border border-red-200'    },
+    reembolsado: { label: 'Reembolsado',cls: 'bg-purple-50 text-purple-700 border border-purple-200' },
   }
-
-  // KPIs
-  const pagados      = cobros.filter(c => c.estado === 'pagado')
-  const totalProcess = pagados.reduce((s, c) => s + (c.valor_total || 0), 0)
+  const pagados       = cobros.filter(c => c.estado === 'pagado')
+  const totalProcess  = pagados.reduce((s, c) => s + (c.valor_total    || 0), 0)
   const totalComision = pagados.reduce((s, c) => s + (c.valor_comision || 0), 0)
-  const pendPago     = pagados.filter(c => !c.pagado_tecnico).reduce((s, c) => s + (c.valor_tecnico || 0), 0)
+  const pendPago      = pagados.filter(c => !c.pagado_tecnico).reduce((s, c) => s + (c.valor_tecnico || 0), 0)
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-xl font-extrabold text-gray-900">Cobros y pagos</h2>
-        <p className="text-sm text-gray-400 mt-0.5">Historial de cobros generados por técnicos con Bold</p>
+    <div className="p-4 md:p-6 w-full max-w-6xl mx-auto">
+      <div className="mb-4">
+        <h2 className="text-lg md:text-xl font-extrabold text-gray-900">Cobros y pagos</h2>
+        <p className="text-sm text-gray-400 mt-0.5">Historial generado por técnicos con Bold</p>
       </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-          <div className="text-2xl mb-2">💰</div>
-          <div className="text-2xl font-extrabold text-emerald-600">{fmt(totalProcess)}</div>
-          <div className="text-xs text-gray-400 mt-1">Total procesado</div>
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm">
+          <div className="text-xl mb-1">💰</div>
+          <div className="text-sm md:text-lg font-extrabold text-emerald-600 leading-tight">{fmt(totalProcess)}</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">Total procesado</div>
         </div>
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-          <div className="text-2xl mb-2">🏦</div>
-          <div className="text-2xl font-extrabold text-blue-600">{fmt(totalComision)}</div>
-          <div className="text-xs text-gray-400 mt-1">Comisiones ServiYa</div>
+        <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm">
+          <div className="text-xl mb-1">🏦</div>
+          <div className="text-sm md:text-lg font-extrabold text-blue-600 leading-tight">{fmt(totalComision)}</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">Comisión ServiYa</div>
         </div>
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-          <div className="text-2xl mb-2">⏳</div>
-          <div className="text-2xl font-extrabold text-amber-600">{fmt(pendPago)}</div>
-          <div className="text-xs text-gray-400 mt-1">Pendiente por pagar a técnicos</div>
+        <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm">
+          <div className="text-xl mb-1">⏳</div>
+          <div className="text-sm md:text-lg font-extrabold text-amber-600 leading-tight">{fmt(pendPago)}</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">Pend. técnicos</div>
         </div>
       </div>
-
-      {/* Tabla */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {cobros.length === 0 ? (
-          <div className="py-20 text-center text-gray-400">
-            <div className="text-4xl mb-3">💳</div>
-            <p className="font-semibold">Aún no hay cobros</p>
-            <p className="text-sm mt-1">Los cobros aparecerán aquí cuando los técnicos generen links de pago.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Referencia</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Técnico / Cliente</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Servicio</th>
-                  <th className="text-right px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Pagó cliente</th>
-                  <th className="text-right px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Comisión</th>
-                  <th className="text-right px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Para técnico</th>
-                  <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {cobros.map(c => {
-                  const cfg = ESTADO_COBRO[c.estado] || { label: c.estado, cls: 'bg-gray-100 text-gray-600' }
-                  return (
-                    <tr key={c.id} className="hover:bg-gray-50/60 transition-colors">
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{c.referencia}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="font-semibold text-gray-800 text-xs">{c.tecnico_nombre}</p>
-                        <p className="text-gray-400 text-xs mt-0.5">→ {c.cliente_nombre}</p>
-                      </td>
-                      <td className="px-4 py-3 max-w-[180px]">
-                        <p className="text-gray-700 text-xs truncate">{c.descripcion}</p>
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-800">{fmt(c.valor_total)}</td>
-                      <td className="px-4 py-3 text-right text-amber-600 font-semibold">{fmt(c.valor_comision)}</td>
-                      <td className="px-4 py-3 text-right text-emerald-600 font-bold">{fmt(c.valor_tecnico)}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.cls}`}>{cfg.label}</span>
-                        {c.pagado_tecnico && (
-                          <span className="ml-1 inline-flex text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">✓ Tec. pagado</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {c.estado === 'pagado' && !c.pagado_tecnico && (
-                          <button
-                            onClick={() => onMarcarPagado(c.id)}
-                            className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg font-semibold transition-all whitespace-nowrap"
-                          >
-                            Marcar técnico pagado
-                          </button>
-                        )}
-                        {c.bold_link && (
-                          <a href={c.bold_link} target="_blank" rel="noopener noreferrer"
-                            className="block text-xs text-blue-500 hover:underline mt-1"
-                          >Ver link →</a>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {cobros.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center text-gray-400">
+          <div className="text-4xl mb-3">💳</div>
+          <p className="font-semibold">Aún no hay cobros</p>
+          <p className="text-sm mt-1">Aparecerán aquí cuando los técnicos generen links de pago.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {cobros.map(c => {
+            const cfg = ESTADO_COBRO[c.estado] || { label: c.estado, cls: 'bg-gray-100 text-gray-600' }
+            return (
+              <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-800 text-sm truncate">{c.tecnico_nombre}</p>
+                    <p className="text-xs text-gray-400 truncate">→ {c.cliente_nombre}</p>
+                  </div>
+                  <span className={`inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.cls}`}>{cfg.label}</span>
+                </div>
+                {c.descripcion && <p className="text-xs text-gray-500 mb-2 line-clamp-1">{c.descripcion}</p>}
+                <div className="grid grid-cols-3 gap-2 mb-2">
+                  <div className="bg-gray-50 rounded-xl p-2 text-center">
+                    <p className="text-[10px] text-gray-400">Cliente pagó</p>
+                    <p className="text-xs font-bold text-gray-800">{fmt(c.valor_total)}</p>
+                  </div>
+                  <div className="bg-amber-50 rounded-xl p-2 text-center">
+                    <p className="text-[10px] text-amber-600">Comisión</p>
+                    <p className="text-xs font-bold text-amber-700">{fmt(c.valor_comision)}</p>
+                  </div>
+                  <div className="bg-emerald-50 rounded-xl p-2 text-center">
+                    <p className="text-[10px] text-emerald-600">Técnico</p>
+                    <p className="text-xs font-bold text-emerald-700">{fmt(c.valor_tecnico)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {c.pagado_tecnico && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">✓ Técnico pagado</span>
+                  )}
+                  {c.estado === 'pagado' && !c.pagado_tecnico && (
+                    <button onClick={() => onMarcarPagado(c.id)}
+                      className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg font-semibold transition-all">
+                      Marcar técnico pagado
+                    </button>
+                  )}
+                  {c.bold_link && (
+                    <a href={c.bold_link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">Ver link →</a>
+                  )}
+                </div>
+                {c.referencia && <p className="text-[10px] text-gray-300 mt-1 font-mono">{c.referencia}</p>}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -305,41 +283,39 @@ function CobrosView({ cobros, onMarcarPagado }) {
 function DashboardView({ solicitudes, tecnicos, clientes, setView }) {
   const hoy = new Date().toDateString()
   const kpis = [
-    { icon: '📅', label: 'Solicitudes hoy',     value: solicitudes.filter(s => new Date(s.created_at).toDateString() === hoy).length, color: 'text-blue-600'   },
-    { icon: '📋', label: 'Total solicitudes',   value: solicitudes.length,                                                                                         color: 'text-purple-600' },
-    { icon: '⏳', label: 'Pendientes',           value: solicitudes.filter(s => s.estado === 'pendiente').length,                                                   color: 'text-amber-600'  },
-    { icon: '✅', label: 'Técnicos verificados', value: tecnicos.filter(t => t.verificado).length,                                                                  color: 'text-emerald-600' },
-    { icon: '🧑‍💼', label: 'Clientes registrados', value: clientes.filter(c => c.hasCuenta).length,                                                                 color: 'text-sky-600' },
+    { icon: '📅', label: 'Hoy',        value: solicitudes.filter(s => new Date(s.created_at).toDateString() === hoy).length, color: 'text-blue-600'   },
+    { icon: '📋', label: 'Total',      value: solicitudes.length,                                                             color: 'text-purple-600' },
+    { icon: '⏳', label: 'Pendientes', value: solicitudes.filter(s => s.estado === 'pendiente').length,                      color: 'text-amber-600'  },
+    { icon: '✅', label: 'Verificados',value: tecnicos.filter(t => t.verificado).length,                                     color: 'text-emerald-600'},
+    { icon: '🧑‍💼', label: 'Clientes',  value: clientes.filter(c => c.hasCuenta).length,                              color: 'text-sky-600'   },
   ]
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-xl font-extrabold text-gray-900">Centro de operaciones</h2>
-        <p className="text-sm text-gray-400 mt-0.5">Resumen ejecutivo de clientes, solicitudes y técnicos</p>
+    <div className="p-4 md:p-6 w-full max-w-5xl mx-auto">
+      <div className="mb-4">
+        <h2 className="text-lg md:text-xl font-extrabold text-gray-900">Centro de operaciones</h2>
+        <p className="text-sm text-gray-400 mt-0.5">Resumen de clientes, solicitudes y técnicos</p>
       </div>
-      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-7">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-5">
         {kpis.map(k => (
-          <div key={k.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-            <div className="text-xl mb-3">{k.icon}</div>
-            <div className={`text-3xl font-extrabold ${k.color}`}>{k.value}</div>
-            <div className="text-xs text-gray-400 mt-1">{k.label}</div>
+          <div key={k.label} className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm text-center">
+            <div className="text-lg md:text-xl mb-1">{k.icon}</div>
+            <div className={`text-xl md:text-2xl font-extrabold ${k.color}`}>{k.value}</div>
+            <div className="text-[10px] md:text-xs text-gray-400 mt-0.5 leading-tight">{k.label}</div>
           </div>
         ))}
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Recent solicitudes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
             <h3 className="font-bold text-gray-800 text-sm">Solicitudes recientes</h3>
-            <button onClick={() => setView('solicitudes')} className="text-xs text-emerald-600 font-semibold hover:underline">Ver todas →</button>
+            <button onClick={() => setView('solicitudes')} className="text-xs text-emerald-600 font-semibold">Ver →</button>
           </div>
           <div className="divide-y divide-gray-50">
             {solicitudes.slice(0, 5).map(s => (
-              <div key={s.id} className="flex items-center gap-3 px-5 py-3">
+              <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800 truncate">{s.cliente_nombre}</p>
-                  <p className="text-xs text-gray-400">{s.categoria} · {s.ciudad}</p>
+                  <p className="text-xs text-gray-400 truncate">{s.categoria} · {s.ciudad}</p>
                 </div>
                 <Badge estado={s.estado} />
               </div>
@@ -347,50 +323,43 @@ function DashboardView({ solicitudes, tecnicos, clientes, setView }) {
             {solicitudes.length === 0 && <p className="text-xs text-gray-400 text-center py-6">Sin solicitudes aún</p>}
           </div>
         </div>
-
-        {/* Recent clientes */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
             <h3 className="font-bold text-gray-800 text-sm">Clientes recientes</h3>
-            <button onClick={() => setView('clientes')} className="text-xs text-emerald-600 font-semibold hover:underline">Ver todos →</button>
+            <button onClick={() => setView('clientes')} className="text-xs text-emerald-600 font-semibold">Ver →</button>
           </div>
           <div className="divide-y divide-gray-50">
             {clientes.slice(0, 5).map(c => (
-              <div key={c.key} className="flex items-center gap-3 px-5 py-3">
-                <div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center text-sky-700 font-bold text-xs flex-shrink-0">{c.nombre.charAt(0)}</div>
+              <div key={c.key} className="flex items-center gap-2.5 px-4 py-2.5">
+                <div className="w-7 h-7 rounded-full bg-sky-50 flex items-center justify-center text-sky-700 font-bold text-xs flex-shrink-0">{c.nombre.charAt(0)}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800 truncate">{c.nombre}</p>
                   <p className="text-xs text-gray-400 truncate">{c.email || c.telefono || 'Sin contacto'}</p>
                 </div>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${c.hasCuenta ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
-                  {c.hasCuenta ? 'Registrado' : 'Invitado'}
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border flex-shrink-0 ${c.hasCuenta ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                  {c.hasCuenta ? '✓' : 'Inv.'}
                 </span>
               </div>
             ))}
             {clientes.length === 0 && <p className="text-xs text-gray-400 text-center py-6">Sin clientes aún</p>}
           </div>
         </div>
-
-        {/* Recent tecnicos */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
             <h3 className="font-bold text-gray-800 text-sm">Técnicos recientes</h3>
-            <button onClick={() => setView('tecnicos')} className="text-xs text-emerald-600 font-semibold hover:underline">Ver todos →</button>
+            <button onClick={() => setView('tecnicos')} className="text-xs text-emerald-600 font-semibold">Ver →</button>
           </div>
           <div className="divide-y divide-gray-50">
             {tecnicos.slice(0, 5).map(t => (
-              <div key={t.id} className="flex items-center gap-3 px-5 py-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-50 overflow-hidden flex items-center justify-center text-emerald-700 font-bold text-xs flex-shrink-0">
-                  {t.foto_perfil_url
-                    ? <img src={t.foto_perfil_url} alt={t.nombre} className="w-full h-full object-cover" />
-                    : t.nombre.charAt(0)
-                  }
+              <div key={t.id} className="flex items-center gap-2.5 px-4 py-2.5">
+                <div className="w-7 h-7 rounded-full bg-emerald-50 overflow-hidden flex items-center justify-center text-emerald-700 font-bold text-xs flex-shrink-0">
+                  {t.foto_perfil_url ? <img src={t.foto_perfil_url} alt={t.nombre} className="w-full h-full object-cover" /> : t.nombre.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800 truncate">{t.nombre}</p>
-                  <p className="text-xs text-gray-400">{t.categoria} · {t.ciudad}</p>
+                  <p className="text-xs text-gray-400 truncate">{t.categoria} · {t.ciudad}</p>
                 </div>
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${t.verificado ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full border flex-shrink-0 ${t.verificado ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
                   {t.verificado ? '✓' : '⏳'}
                 </span>
               </div>
@@ -403,7 +372,7 @@ function DashboardView({ solicitudes, tecnicos, clientes, setView }) {
   )
 }
 
-// ─── Solicitudes ──────────────────────────────────────────────────────────────
+// ─── Solicitudes ──────────────────────────────────────────────────────────────────
 function SolicitudesView({ solicitudes, tecnicos, onUpdateEstado, onAsignarTecnico }) {
   const [search, setSearch]   = useState('')
   const [filE, setFilE]       = useState('')
@@ -420,90 +389,70 @@ function SolicitudesView({ solicitudes, tecnicos, onUpdateEstado, onAsignarTecni
   }), [solicitudes, search, filE, filC, filCat])
 
   return (
-    <div className="p-6">
-      <div className="mb-5">
-        <h2 className="text-xl font-extrabold text-gray-900">Solicitudes</h2>
+    <div className="p-4 md:p-6 w-full">
+      <div className="mb-4">
+        <h2 className="text-lg md:text-xl font-extrabold text-gray-900">Solicitudes</h2>
         <p className="text-sm text-gray-400 mt-0.5">{filtered.length} de {solicitudes.length} solicitudes</p>
       </div>
-      <div className="flex flex-wrap gap-3 mb-5">
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre o teléfono..."
-          className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 flex-1 min-w-[180px]" />
-        <select value={filE} onChange={e => setFilE(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          <option value="">Todos los estados</option>
+      {/* Filtros */}
+      <div className="grid grid-cols-2 sm:flex flex-wrap gap-2 mb-4">
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..."
+          className="col-span-2 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-full sm:flex-1 sm:min-w-[160px]" />
+        <select value={filE} onChange={e => setFilE(e.target.value)} className="border border-gray-200 rounded-xl px-2.5 py-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <option value="">Estado</option>
           {ESTADOS.map(e => <option key={e}>{e}</option>)}
         </select>
-        <select value={filC} onChange={e => setFilC(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          <option value="">Todas las ciudades</option>
+        <select value={filC} onChange={e => setFilC(e.target.value)} className="border border-gray-200 rounded-xl px-2.5 py-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <option value="">Ciudad</option>
           {CIUDADES.map(c => <option key={c}>{c}</option>)}
         </select>
-        <select value={filCat} onChange={e => setFilCat(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          <option value="">Todas las categorías</option>
-          {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
-        </select>
       </div>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {filtered.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-12">No se encontraron solicitudes</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  <th className="text-left px-4 py-3">Cliente</th>
-                  <th className="text-left px-4 py-3">Ciudad · Servicio</th>
-                  <th className="text-left px-4 py-3">Descripción</th>
-                  <th className="text-left px-4 py-3">Estado</th>
-                  <th className="text-left px-4 py-3">Técnico asignado</th>
-                  <th className="text-left px-4 py-3">Fecha</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filtered.map(s => {
-                  const tecDisp = tecnicos.filter(t => t.activo && t.ciudad === s.ciudad)
-                  return (
-                    <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="font-semibold text-gray-800">{s.cliente_nombre}</p>
-                        <p className="text-xs text-gray-400">{s.cliente_telefono}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-gray-700">{s.ciudad}</p>
-                        <p className="text-xs text-gray-400">{s.categoria}</p>
-                      </td>
-                      <td className="px-4 py-3 max-w-[180px]">
-                        <p className="text-xs text-gray-500 truncate">{s.descripcion}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <select value={s.estado} onChange={e => onUpdateEstado(s.id, e.target.value)}
-                          className="border border-gray-200 rounded-lg text-xs px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                        >
-                          {ESTADOS.map(e => <option key={e}>{e}</option>)}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <select value={s.tecnico_id || ''} onChange={e => onAsignarTecnico(s.id, e.target.value || null)}
-                          className="border border-gray-200 rounded-lg text-xs px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 max-w-[130px]"
-                        >
-                          <option value="">Sin asignar</option>
-                          {tecDisp.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
-                        {new Date(s.created_at).toLocaleDateString('es-CO', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-12">No se encontraron solicitudes</p>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(s => {
+            const tecDisp = tecnicos.filter(t => t.activo && t.ciudad === s.ciudad)
+            return (
+              <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-800 text-sm truncate">{s.cliente_nombre}</p>
+                    <p className="text-xs text-gray-400">{s.cliente_telefono}</p>
+                  </div>
+                  <Badge estado={s.estado} />
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{s.ciudad}</span>
+                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">{s.categoria}</span>
+                </div>
+                {s.descripcion && <p className="text-xs text-gray-500 mb-3 line-clamp-2">{s.descripcion}</p>}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <select value={s.estado} onChange={e => onUpdateEstado(s.id, e.target.value)}
+                    className="border border-gray-200 rounded-lg text-xs px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 flex-1 min-w-[110px]">
+                    {ESTADOS.map(e => <option key={e}>{e}</option>)}
+                  </select>
+                  <select value={s.tecnico_id || ''} onChange={e => onAsignarTecnico(s.id, e.target.value || null)}
+                    className="border border-gray-200 rounded-lg text-xs px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 flex-1 min-w-[110px]">
+                    <option value="">Sin asignar</option>
+                    {tecDisp.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                  </select>
+                </div>
+                <p className="text-[10px] text-gray-300 mt-2">
+                  {new Date(s.created_at).toLocaleDateString('es-CO', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
+                </p>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
 
 // ─── Clientes ─────────────────────────────────────────────────────────────────
+
 function ClientesView({ clientes }) {
   const [search, setSearch] = useState('')
   const [filtroRegistro, setFiltroRegistro] = useState('')
@@ -774,98 +723,65 @@ function TecnicosView({ tecnicos, pagosByTecnico, onVerificar, onActivar }) {
   return (
     <>
       <DocsModal tecnico={viewingDocs} pago={viewingDocs ? pagosByTecnico[viewingDocs.id] : null} onClose={() => setViewDocs(null)} onVerificar={onVerificar} onActivar={onActivar} />
-      <div className="p-6">
-        <div className="mb-5">
-          <h2 className="text-xl font-extrabold text-gray-900">Técnicos</h2>
+      <div className="p-4 md:p-6 w-full">
+        <div className="mb-4">
+          <h2 className="text-lg md:text-xl font-extrabold text-gray-900">Técnicos</h2>
           <p className="text-sm text-gray-400 mt-0.5">{filtered.length} de {tecnicos.length} técnicos</p>
         </div>
-        <div className="flex flex-wrap gap-3 mb-5">
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre, teléfono o email..."
-            className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 flex-1 min-w-[200px]" />
-          <select value={filC} onChange={e => setFilC(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            <option value="">Todas las ciudades</option>
+        <div className="grid grid-cols-2 sm:flex flex-wrap gap-2 mb-4">
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..."
+            className="col-span-2 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-full sm:flex-1 sm:min-w-[160px]" />
+          <select value={filC} onChange={e => setFilC(e.target.value)} className="border border-gray-200 rounded-xl px-2.5 py-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="">Ciudad</option>
             {CIUDADES.map(c => <option key={c}>{c}</option>)}
           </select>
-          <select value={filCat} onChange={e => setFilCat(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            <option value="">Todas las categorías</option>
+          <select value={filCat} onChange={e => setFilCat(e.target.value)} className="border border-gray-200 rounded-xl px-2.5 py-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="">Categoría</option>
             {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
           </select>
-          <select value={filV} onChange={e => setFilV(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            <option value="">Todos</option>
+          <select value={filV} onChange={e => setFilV(e.target.value)} className="border border-gray-200 rounded-xl px-2.5 py-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="">Estado</option>
             <option value="si">Verificados</option>
             <option value="no">Por verificar</option>
           </select>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          {filtered.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-12">No hay técnicos con esos filtros</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    <th className="text-left px-4 py-3">Técnico</th>
-                    <th className="text-left px-4 py-3">Ciudad · Especialidad</th>
-                    <th className="text-left px-4 py-3">Contacto</th>
-                    <th className="text-left px-4 py-3">Cédula</th>
-                    <th className="text-left px-4 py-3">Estado</th>
-                    <th className="text-left px-4 py-3">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {filtered.map(t => (
-                    <tr key={t.id} className={`hover:bg-gray-50/50 transition-colors ${!t.activo ? 'opacity-40' : ''}`}>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-emerald-50 overflow-hidden flex items-center justify-center text-emerald-700 font-bold text-xs flex-shrink-0">
-                            {t.foto_perfil_url
-                              ? <img src={t.foto_perfil_url} alt={t.nombre} className="w-full h-full object-cover" />
-                              : t.nombre.charAt(0)
-                            }
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-800">{t.nombre}</p>
-                            <p className="text-xs text-gray-400">{t.experiencia_anos || 0} años exp.</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-gray-700">{t.ciudad}</p>
-                        <p className="text-xs text-gray-400">{t.categoria}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-xs text-gray-700">{t.telefono}</p>
-                        <p className="text-xs text-gray-400 truncate max-w-[130px]">{t.email}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        {t.cedula_numero
-                          ? <span className="text-xs font-mono text-gray-700">{t.cedula_numero}</span>
-                          : <span className="text-xs text-gray-300">—</span>
-                        }
-                      </td>
-                      <td className="px-4 py-3">
-                        {t.verificado
-                          ? <span className="bg-green-50 text-green-700 border border-green-200 text-xs font-semibold px-2 py-0.5 rounded-full">✓ Verificado</span>
-                          : <span className="bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold px-2 py-0.5 rounded-full">⏳ Pendiente</span>
-                        }
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2 flex-wrap">
-                          <button onClick={() => setViewDocs(t)}
-                            className="text-xs px-2.5 py-1.5 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 font-semibold transition-colors"
-                          >📄 Ver cédula</button>
-                          <button onClick={() => onActivar(t.id, !t.activo)}
-                            className={`text-xs px-2.5 py-1.5 rounded-lg border font-semibold transition-colors ${t.activo ? 'border-gray-200 text-gray-500 hover:bg-gray-50' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
-                          >{t.activo ? 'Desactivar' : 'Activar'}</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        {filtered.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-12">No hay técnicos con esos filtros</p>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map(t => (
+              <div key={t.id} className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-4 ${!t.activo ? 'opacity-50' : ''}`}>
+                <div className="flex items-start gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 overflow-hidden flex items-center justify-center text-emerald-700 font-extrabold text-sm flex-shrink-0">
+                    {t.foto_perfil_url ? <img src={t.foto_perfil_url} alt={t.nombre} className="w-full h-full object-cover" /> : t.nombre.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-800 text-sm truncate">{t.nombre}</p>
+                    <p className="text-xs text-gray-400">{t.categoria} · {t.ciudad}</p>
+                    <p className="text-xs text-gray-400">{t.telefono} · {t.experiencia_anos || 0} años exp.</p>
+                  </div>
+                  {t.verificado
+                    ? <span className="bg-green-50 text-green-700 border border-green-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0">✓ Verificado</span>
+                    : <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0">⏳ Pendiente</span>
+                  }
+                </div>
+                {t.cedula_numero && (
+                  <p className="text-[10px] text-gray-400 font-mono mb-2">CC: {t.cedula_numero}</p>
+                )}
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={() => setViewDocs(t)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 font-semibold transition-colors flex-1">
+                    📄 Ver cédula
+                  </button>
+                  <button onClick={() => onActivar(t.id, !t.activo)}
+                    className={`text-xs px-3 py-1.5 rounded-lg border font-semibold transition-colors flex-1 ${t.activo ? 'border-gray-200 text-gray-500 hover:bg-gray-50' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}>
+                    {t.activo ? 'Desactivar' : 'Activar'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </>
   )
