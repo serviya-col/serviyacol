@@ -42,7 +42,7 @@ async function sendEmail({ to, subject, html }) {
   }
 }
 
-async function sendWhatsApp({ phone, templateName, params = [] }) {
+async function sendWhatsApp({ phone, templateName, bodyParams = [], buttonParams = [] }) {
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID
   const token   = process.env.WHATSAPP_ACCESS_TOKEN
   if (!phoneId || !token || !phone || !templateName) return
@@ -51,6 +51,26 @@ async function sendWhatsApp({ phone, templateName, params = [] }) {
   if (!waPhone) { console.warn('[notify:wa] Invalid phone:', phone); return }
 
   try {
+    const components = []
+    
+    // Cuerpo del mensaje
+    if (bodyParams.length) {
+      components.push({
+        type: 'body',
+        parameters: bodyParams.map(p => ({ type: 'text', text: String(p) })),
+      })
+    }
+
+    // Botón con link dinámico (si aplica)
+    if (buttonParams.length) {
+      components.push({
+        type: 'button',
+        sub_type: 'url',
+        index: 0,
+        parameters: buttonParams.map(p => ({ type: 'text', text: String(p).replace(/^https?:\/\//, '') })),
+      })
+    }
+
     const body = {
       messaging_product: 'whatsapp',
       to: waPhone,
@@ -58,12 +78,10 @@ async function sendWhatsApp({ phone, templateName, params = [] }) {
       template: {
         name: templateName,
         language: { code: 'es' },
-        components: params.length ? [{
-          type: 'body',
-          parameters: params.map(p => ({ type: 'text', text: String(p) })),
-        }] : [],
+        components,
       },
     }
+
     const res = await fetch(`${WA_API}/${phoneId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -88,7 +106,7 @@ export async function notifyBienvenidaCliente({ nombre, email, telefono }) {
     sendWhatsApp({
       phone: telefono,
       templateName: process.env.WHATSAPP_TPL_BIENVENIDA_CLIENTE || 'serviya_bienvenida_cliente',
-      params: [nombre],
+      bodyParams: [nombre],
     }),
     // Admin
     sendEmail({
@@ -110,7 +128,7 @@ export async function notifyBienvenidaTecnico({ nombre, email, telefono }) {
     sendWhatsApp({
       phone: telefono,
       templateName: process.env.WHATSAPP_TPL_BIENVENIDA_TECNICO || 'serviya_bienvenida_tecnico',
-      params: [nombre],
+      bodyParams: [nombre],
     }),
     // Admin email
     sendEmail({
@@ -122,7 +140,7 @@ export async function notifyBienvenidaTecnico({ nombre, email, telefono }) {
     sendWhatsApp({
       phone: process.env.ADMIN_WHATSAPP,
       templateName: process.env.WHATSAPP_TPL_ADMIN_NUEVO_TECNICO || 'serviya_admin_nuevo_tecnico',
-      params: [nombre, email || '—', telefono || '—'],
+      bodyParams: [nombre, email || '—', telefono || '—'],
     }),
   ])
 }
@@ -140,7 +158,7 @@ export async function notifyTecnicoAsignado({ solicitud, tecnico, cliente }) {
     sendWhatsApp({
       phone: tecnico.telefono,
       templateName: process.env.WHATSAPP_TPL_TECNICO_ASIGNADO || 'serviya_tecnico_asignado',
-      params: [tecnico.nombre, solicitud.tipo_servicio, cliente?.nombre || '—', solicitud.ciudad || '—'],
+      bodyParams: [tecnico.nombre, solicitud.tipo_servicio, cliente?.nombre || '—', solicitud.ciudad || '—'],
     }),
     // → Cliente (email)
     ...(cliente?.email ? [sendEmail({
@@ -152,7 +170,7 @@ export async function notifyTecnicoAsignado({ solicitud, tecnico, cliente }) {
     ...(cliente?.telefono ? [sendWhatsApp({
       phone: cliente.telefono,
       templateName: process.env.WHATSAPP_TPL_CLIENTE_ASIGNADO || 'serviya_cliente_tecnico_asignado',
-      params: [cliente.nombre, tecnico.nombre, solicitud.tipo_servicio, tecnico.telefono || '—'],
+      bodyParams: [cliente.nombre, tecnico.nombre, solicitud.tipo_servicio, tecnico.telefono || '—'],
     })] : []),
   ])
 }
@@ -168,7 +186,7 @@ export async function notifyTecnicoEnCamino({ solicitud, tecnico, cliente }) {
     ...(cliente?.telefono ? [sendWhatsApp({
       phone: cliente.telefono,
       templateName: process.env.WHATSAPP_TPL_EN_CAMINO || 'serviya_tecnico_en_camino',
-      params: [cliente.nombre, tecnico.nombre, tecnico.telefono || '—'],
+      bodyParams: [cliente.nombre, tecnico.nombre, tecnico.telefono || '—'],
     })] : []),
   ])
 }
@@ -184,13 +202,13 @@ export async function notifyServicioCompletado({ solicitud, tecnico, cliente }) 
     ...(cliente?.telefono ? [sendWhatsApp({
       phone: cliente.telefono,
       templateName: process.env.WHATSAPP_TPL_COMPLETADO_CLIENTE || 'serviya_servicio_completado_cliente',
-      params: [cliente.nombre, tecnico.nombre, solicitud.tipo_servicio],
+      bodyParams: [cliente.nombre, tecnico.nombre, solicitud.tipo_servicio],
     })] : []),
     // Técnico también recibe WA de confirmación
     ...(tecnico?.telefono ? [sendWhatsApp({
       phone: tecnico.telefono,
       templateName: process.env.WHATSAPP_TPL_COMPLETADO_TECNICO || 'serviya_servicio_completado_tecnico',
-      params: [tecnico.nombre, solicitud.tipo_servicio],
+      bodyParams: [tecnico.nombre, solicitud.tipo_servicio],
     })] : []),
   ])
 }
@@ -208,7 +226,12 @@ export async function notifyCobroCreado({ cobro }) {
     ...(cobro.cliente_telefono ? [sendWhatsApp({
       phone: cobro.cliente_telefono,
       templateName: process.env.WHATSAPP_TPL_COBRO_CREADO || 'serviya_cobro_link_pago',
-      params: [cobro.cliente_nombre, cobro.tecnico_nombre, `$${cobro.valor_total?.toLocaleString('es-CO')} COP`, cobro.bold_link || SITE_URL],
+      bodyParams: [
+        cobro.cliente_nombre,
+        cobro.tecnico_nombre,
+        `$${cobro.valor_total?.toLocaleString('es-CO')} COP`,
+        cobro.bold_link || SITE_URL
+      ],
     })] : []),
   ])
 }
@@ -232,7 +255,7 @@ export async function notifyPagoConfirmado({ cobro }) {
     ...(cobro.tecnico_telefono ? [sendWhatsApp({
       phone: cobro.tecnico_telefono,
       templateName: process.env.WHATSAPP_TPL_PAGO_RECIBIDO || 'serviya_pago_recibido_tecnico',
-      params: [cobro.tecnico_nombre || 'Técnico', cobro.descripcion || 'servicio', `$${cobro.valor_tecnico?.toLocaleString('es-CO')} COP`],
+      bodyParams: [cobro.tecnico_nombre || 'Técnico', cobro.descripcion || 'servicio', `$${cobro.valor_tecnico?.toLocaleString('es-CO')} COP`],
     })] : []),
     // Email al admin
     sendEmail({
@@ -254,7 +277,7 @@ export async function notifyTecnicoPagado({ tecnico, cobro }) {
     sendWhatsApp({
       phone: tecnico.telefono,
       templateName: process.env.WHATSAPP_TPL_PAGO_TRANSFERIDO || 'serviya_pago_transferido_tecnico',
-      params: [tecnico.nombre, `$${cobro.valor_tecnico?.toLocaleString('es-CO')} COP`, cobro.referencia || '—'],
+      bodyParams: [tecnico.nombre, `$${cobro.valor_tecnico?.toLocaleString('es-CO')} COP`, cobro.referencia || '—'],
     }),
   ])
 }
@@ -270,7 +293,7 @@ export async function notifyNuevaSolicitud({ solicitud, clienteNombre }) {
     sendWhatsApp({
       phone: process.env.ADMIN_WHATSAPP,
       templateName: process.env.WHATSAPP_TPL_ADMIN_SOLICITUD || 'serviya_admin_nueva_solicitud',
-      params: [clienteNombre, solicitud.tipo_servicio, solicitud.ciudad || '—'],
+      bodyParams: [clienteNombre, solicitud.tipo_servicio, solicitud.ciudad || '—'],
     }),
   ])
 }
