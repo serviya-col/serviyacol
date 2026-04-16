@@ -1,3 +1,5 @@
+import crypto from 'crypto'
+
 export async function sendMetaEvent(eventName, eventData, userData = {}) {
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID
   const token = process.env.META_CAPI_TOKEN
@@ -9,20 +11,14 @@ export async function sendMetaEvent(eventName, eventData, userData = {}) {
 
   const url = `https://graph.facebook.com/v19.0/${pixelId}/events`
 
-  // Base userData format required by Meta CAPI
-  // Note: phone (ph) and email (em) should normally be SHA256 hashed. 
-  // For simplicity, we hash them if provided, else we send what we can (like client IP).
-  const hashString = async (str) => {
+  // Node.js crypto hash
+  const hashString = (str) => {
     if (!str) return undefined
-    const encoder = new TextEncoder()
-    const data = encoder.encode(str.trim().toLowerCase())
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+    return crypto.createHash('sha256').update(str.trim().toLowerCase()).digest('hex')
   }
 
-  const em = userData.email ? await hashString(userData.email) : undefined
-  const ph = userData.telefono ? await hashString(userData.telefono) : undefined
+  const em = userData.email ? hashString(userData.email) : undefined
+  const ph = userData.telefono ? hashString(userData.telefono) : undefined
 
   // The client_ip and client_user_agent are highly recommended by Meta
   const user_data = {
