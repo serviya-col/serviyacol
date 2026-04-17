@@ -108,7 +108,7 @@ function AuthScreen({ onSuccess, forcedError = '' }) {
                 onChange={e => setEmail(e.target.value)}
                 required
                 placeholder="tu@correo.com"
-                className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                className="w-full input-dark bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
               />
             </div>
             <div>
@@ -121,7 +121,7 @@ function AuthScreen({ onSuccess, forcedError = '' }) {
                   minLength={6}
                   required
                   placeholder="••••••••"
-                  className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 pr-14 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  className="w-full input-dark bg-white/8 border border-white/15 rounded-xl px-4 py-3 pr-14 text-sm text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
                 />
                 <button
                   type="button"

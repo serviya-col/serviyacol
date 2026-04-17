@@ -223,7 +223,7 @@ export default function CobrarPage() {
                   onChange={handleChange}
                   placeholder="3001234567"
                   type="tel"
-                  className="w-full bg-white/10 border border-white/20 rounded-xl py-3 pr-4 pl-16 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  className="w-full input-dark bg-white/10 border border-white/20 rounded-xl py-3 pr-4 pl-16 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                 />
               </div>
               <p className="text-xs text-white/30 mt-1">Le enviarás el link directamente a este número.</p>
@@ -256,7 +256,7 @@ export default function CobrarPage() {
                 onChange={handleChange}
                 rows={3}
                 placeholder="Ej: Instalación de toma corriente doble en habitación principal..."
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
+                className="w-full input-dark bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
               />
             </div>
 
@@ -270,7 +270,7 @@ export default function CobrarPage() {
                   value={form.valor_raw}
                   onChange={handleValorChange}
                   placeholder="0"
-                  className="w-full bg-white/10 border border-white/20 rounded-xl py-4 pr-4 pl-10 text-white placeholder-white/30 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all tracking-tight"
+                  className="w-full input-dark bg-white/10 border border-white/20 rounded-xl py-4 pr-4 pl-10 text-white placeholder-white/30 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all tracking-tight"
                 />
               </div>
             </div>
