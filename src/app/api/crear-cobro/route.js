@@ -47,35 +47,59 @@ export async function POST(req) {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.serviyacol.com'
 
-    // ── Crear link de pago Bold (Smart Checkout con firma SHA256) ──────────
-    // Firma = SHA256(orderId + amount + currency + secretKey)
-    // Parámetros según docs Bold Colombia: orderId, redirectionUrl, integritySignature
-    const boldIdentityKey = process.env.BOLD_IDENTITY_KEY || ''
-    const boldSecretKey   = process.env.BOLD_API_KEY || ''
+    // ── Crear link de pago Bold (API Link de pagos) ────────────────────────
+    // Docs: https://developers.bold.co/pagos-en-linea/api-link-de-pagos
+    // Auth: Authorization: x-api-key {llave_de_identidad}   ← llave de identidad pagos en línea
+    // URL:  POST https://integrations.api.bold.co/online/link/v1
+    //
+    // IMPORTANTE: Las llaves de "API Link de pagos" son las mismas que "Botón de pagos"
+    // (sección Pagos en línea del panel), NO las de "API Integrations" de datáfonos.
+    // Obtener en: panel.bold.co → Mis ventas → Integraciones → Pagos en línea
+    const boldApiKey = process.env.BOLD_IDENTITY_KEY || ''  // Llave de identidad (Pagos en línea)
 
     let boldLink = null
-    let boldPaymentLinkId = referencia
+    let boldPaymentLinkId = null
 
-    if (boldIdentityKey && boldSecretKey) {
-      const amountStr   = String(monto)
-      const currencyStr = 'COP'
+    if (boldApiKey) {
+      // Expiración: 72 horas en nanosegundos (date.now() en ms * 1e6 = ns)
+      const expiration = Math.floor((Date.now() + 72 * 60 * 60 * 1000) * 1e6)
 
-      // SHA256 simple de la concatenación (NO es HMAC)
-      const { createHash } = await import('crypto')
-      const integritySignature = createHash('sha256')
-        .update(`${referencia}${amountStr}${currencyStr}${boldSecretKey}`)
-        .digest('hex')
+      const boldBody = {
+        amount_type: 'CLOSE',
+        amount: {
+          currency: 'COP',
+          total_amount: monto,
+          tip_amount: 0,
+        },
+        reference: referencia,
+        description: `ServiYa: ${descripcion.substring(0, 80)}`,
+        expiration_date: expiration,
+        callback_url: `${siteUrl}/pago-exitoso?ref=${referencia}`,
+        payment_methods: ['CREDIT_CARD', 'PSE', 'NEQUI', 'BOTON_BANCOLOMBIA'],
+        ...(cliente_email ? { payer_email: cliente_email } : {}),
+      }
 
-      const params = new URLSearchParams({
-        orderId:             referencia,          // Bold usa orderId, no reference
-        amount:              amountStr,
-        currency:            currencyStr,
-        description:         `ServiYa: ${descripcion.substring(0, 80)}`,
-        redirectionUrl:      `${siteUrl}/pago-exitoso?ref=${referencia}`,
-        integritySignature,                        // camelCase
+      const boldRes = await fetch('https://integrations.api.bold.co/online/link/v1', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `x-api-key ${boldApiKey}`,
+        },
+        body: JSON.stringify(boldBody),
       })
-      boldLink = `https://checkout.bold.co/payment/${boldIdentityKey}?${params.toString()}`
-      boldPaymentLinkId = referencia
+
+      const boldData = await boldRes.json()
+      console.log('Bold API response:', boldRes.status, JSON.stringify(boldData))
+
+      if (boldRes.ok && boldData.payload?.url) {
+        boldLink          = boldData.payload.url
+        boldPaymentLinkId = boldData.payload.payment_link
+      } else {
+        console.error('Bold API error:', boldRes.status, boldData)
+        // No bloqueamos el flujo — usamos fallback con WhatsApp directo
+        boldLink          = `${siteUrl}/pago-demo?ref=${referencia}`
+        boldPaymentLinkId = `PENDIENTE-${referencia}`
+      }
     } else {
       boldLink          = `${siteUrl}/pago-demo?ref=${referencia}`
       boldPaymentLinkId = `DEMO-${referencia}`
