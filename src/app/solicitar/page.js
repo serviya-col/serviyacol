@@ -23,8 +23,15 @@ const CATEGORIAS = [
   { id: 'Otro',               icon: '🛠️', desc: 'Otro tipo de servicio'           },
 ]
 
+// ── GA4 helper ────────────────────────────────────────────────────────────────
+function trackGA4(event, params = {}) {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', event, params)
+  }
+}
+
 function SolicitarForm() {
-  const searchParams = useSearchParams()
+  const searchParams  = useSearchParams()
   const categoriaParam = searchParams.get('categoria') || ''
   const ciudadParam    = searchParams.get('ciudad')    || ''
 
@@ -33,9 +40,9 @@ function SolicitarForm() {
     cliente_nombre: '', cliente_telefono: '', cliente_email: '',
     ciudad: ciudadParam, categoria: categoriaParam, descripcion: '', direccion: '',
   })
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [success, setSuccess]   = useState(false)
+  const [error, setError]       = useState('')
   const [authEmail, setAuthEmail] = useState('')
   const [legalModal, setLegalModal] = useState(null)
 
@@ -46,10 +53,21 @@ function SolicitarForm() {
       setAuthEmail(email)
       setForm((f) => ({ ...f, cliente_email: email }))
     })
+    // GA4: inicio del flujo
+    trackGA4('view_item_list', { item_list_name: 'Servicios disponibles' })
   }, [])
 
   const set = (field, value) => setForm((f) => ({ ...f, [field]: value }))
   const handleChange = (e) => set(e.target.name, e.target.value)
+
+  const handleSelectCategoria = (catId) => {
+    set('categoria', catId)
+    // GA4: seleccionar servicio
+    trackGA4('select_content', {
+      content_type: 'service',
+      item_id:      catId,
+    })
+  }
 
   const goNext = () => {
     if (!form.categoria || !form.ciudad) {
@@ -57,6 +75,12 @@ function SolicitarForm() {
       return
     }
     setError('')
+    // GA4: inicio de checkout
+    trackGA4('begin_checkout', {
+      currency: 'COP',
+      value:    50000,
+      items: [{ item_name: form.categoria, item_category: form.ciudad }],
+    })
     setStep(2)
   }
 
@@ -79,64 +103,133 @@ function SolicitarForm() {
       estado:           'pendiente',
     }])
     setLoading(false)
+
     if (dbError) {
       setError('Error al enviar la solicitud. Intenta de nuevo.')
     } else {
+      // GA4: lead generado ✅
+      trackGA4('generate_lead', {
+        currency: 'COP',
+        value:    50000,
+        items: [{ item_name: form.categoria, item_category: form.ciudad }],
+      })
+      // Meta Pixel
+      if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'Lead', { content_name: form.categoria, ciudad: form.ciudad })
+      }
       setSuccess(true)
-
-      // Llamar a nuestra API de notificaciones para avisarle al Admin
+      // Notificar al Admin
       fetch('/api/notify/nueva-solicitud', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           solicitud: {
-            tipo_servicio: form.categoria,   // mapeamos categoria → tipo_servicio para notify.js
-            categoria: form.categoria,
-            ciudad: form.ciudad,
-            urgencia: 'Normal',
-            descripcion: form.descripcion
+            tipo_servicio: form.categoria,
+            categoria:     form.categoria,
+            ciudad:        form.ciudad,
+            urgencia:      'Normal',
+            descripcion:   form.descripcion,
           },
-          clienteNombre: form.cliente_nombre
-        })
-      }).catch(err => console.warn('Error mandando notificacion:', err))
-
-      if (typeof window !== 'undefined' && window.fbq) {
-        window.fbq('track', 'Lead', {
-          content_name: form.categoria,
-          ciudad: form.ciudad
-        })
-      }
+          clienteNombre: form.cliente_nombre,
+        }),
+      }).catch(() => {})
     }
-
   }
 
-  /* ── Success screen ── */
+  /* ── Pantalla de éxito premium ─────────────────────────────────────────── */
   if (success) {
+    const catIcon = CATEGORIAS.find(c => c.id === form.categoria)?.icon || '🛠️'
     return (
-      <div className="max-w-lg mx-auto px-4 py-20 text-center">
-        <div className="text-6xl mb-5 animate-bounce-soft">✅</div>
-        <h1 className="text-2xl font-extrabold text-gray-900 mb-2">¡Solicitud enviada!</h1>
-        <p className="text-gray-500 mb-2">
-          Recibimos tu solicitud de <strong>{form.categoria}</strong> en{' '}
-          <strong>{form.ciudad}</strong>.
-        </p>
-        <p className="text-gray-500 mb-6">
-          Te contactaremos al <strong>{form.cliente_telefono}</strong> en los próximos{' '}
-          <strong>30 minutos</strong> con un técnico disponible.
-        </p>
-        <div className="bg-brand-pale rounded-2xl p-5 flex items-start gap-3 text-left mb-6">
-          <span className="text-2xl flex-shrink-0">💬</span>
-          <p className="text-sm text-brand font-medium">
-            Si es urgente también puedes escribirnos directamente por{' '}
-            <strong>WhatsApp</strong> usando el botón verde.
+      <div className="min-h-[70vh] flex items-center justify-center px-4 py-16">
+        <div className="w-full max-w-md">
+          {/* Animación de check */}
+          <div className="flex justify-center mb-8">
+            <div className="relative w-24 h-24">
+              <div className="absolute inset-0 rounded-full bg-emerald-100 animate-ping opacity-30" />
+              <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-xl shadow-emerald-500/30">
+                <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Título */}
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-extrabold text-gray-900 mb-2">¡Solicitud recibida!</h1>
+            <p className="text-gray-500 text-sm">Nuestro equipo ya está buscando el técnico ideal para ti</p>
+          </div>
+
+          {/* Resumen de la solicitud */}
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-5">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Resumen de tu solicitud</p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-xl flex-shrink-0">
+                  {catIcon}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Servicio solicitado</p>
+                  <p className="font-bold text-gray-800">{form.categoria}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-xl flex-shrink-0">📍</div>
+                <div>
+                  <p className="text-xs text-gray-400">Ciudad</p>
+                  <p className="font-bold text-gray-800">{form.ciudad}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-xl flex-shrink-0">👤</div>
+                <div>
+                  <p className="text-xs text-gray-400">Contacto</p>
+                  <p className="font-bold text-gray-800">{form.cliente_nombre} · {form.cliente_telefono}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline de próximos pasos */}
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-3xl p-5 mb-5">
+            <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-4">¿Qué sigue?</p>
+            <div className="space-y-3">
+              {[
+                { time: 'En minutos',    icon: '🔔', txt: 'Te asignamos un técnico verificado en tu zona'  },
+                { time: '< 30 min',      icon: '📱', txt: `El técnico te contacta al ${form.cliente_telefono}` },
+                { time: 'A tu horario',  icon: '🏠', txt: 'El técnico llega, evalúa y te cotiza sin compromiso' },
+              ].map((paso, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white border border-emerald-200 flex items-center justify-center text-base flex-shrink-0 shadow-sm">{paso.icon}</div>
+                  <div className="pt-0.5">
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">{paso.time}</span>
+                    <p className="text-xs text-gray-700 mt-1 leading-relaxed">{paso.txt}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CTAs */}
+          <div className="grid grid-cols-2 gap-3">
+            <a
+              href={`https://wa.me/573138537261?text=Hola, solicité un ${form.categoria} en ${form.ciudad} para ${form.cliente_nombre}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold py-3 rounded-xl transition-all active:scale-95 text-sm"
+            >
+              <span>💬</span> WhatsApp
+            </a>
+            <Link
+              href="/cliente"
+              className="flex items-center justify-center gap-2 bg-brand hover:bg-brand-dark text-white font-bold py-3 rounded-xl transition-all active:scale-95 text-sm"
+            >
+              Ver mi panel
+            </Link>
+          </div>
+          <p className="text-center text-xs text-gray-400 mt-4">
+            ¿Necesitas algo más? <Link href="/" className="text-brand font-semibold hover:underline">Volver al inicio</Link>
           </p>
         </div>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-bold px-6 py-3 rounded-xl transition-all active:scale-95"
-        >
-          Volver al inicio
-        </Link>
       </div>
     )
   }
@@ -192,7 +285,7 @@ function SolicitarForm() {
                 key={c.id}
                 type="button"
                 id={`cat-${c.id.toLowerCase().replace(/\s/g, '-')}`}
-                onClick={() => set('categoria', c.id)}
+                onClick={() => handleSelectCategoria(c.id)}
                 className={`p-3.5 rounded-2xl border-2 text-left transition-all ${
                   form.categoria === c.id
                     ? 'border-brand bg-brand-pale shadow-md shadow-brand/10'
@@ -372,7 +465,12 @@ function SolicitarForm() {
             disabled={loading}
             className="w-full bg-brand hover:bg-brand-dark disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition-all active:scale-[0.98]"
           >
-            {loading ? 'Enviando solicitud...' : 'Solicitar técnico ahora →'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                Enviando solicitud...
+              </span>
+            ) : 'Solicitar técnico ahora →'}
           </button>
 
           <p className="text-xs text-gray-400 text-center">

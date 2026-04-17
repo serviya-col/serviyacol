@@ -7,20 +7,48 @@ import Logo from '@/components/Logo'
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
 const ESTADO_CFG = {
-  pendiente:  { label: 'Pendiente',  cls: 'bg-amber-50  text-amber-700  border border-amber-200'   },
-  asignada:   { label: 'Asignada',   cls: 'bg-blue-50   text-blue-700   border border-blue-200'    },
-  en_curso:   { label: 'En curso',   cls: 'bg-purple-50 text-purple-700 border border-purple-200'  },
-  completada: { label: 'Completada', cls: 'bg-green-50  text-green-700  border border-green-200'   },
-  cancelada:  { label: 'Cancelada',  cls: 'bg-red-50    text-red-700    border border-red-200'     },
+  pendiente:  { label: 'Pendiente',  cls: 'bg-amber-50  text-amber-700  border border-amber-200',  dot: 'bg-amber-400'   },
+  asignada:   { label: 'Asignada',   cls: 'bg-blue-50   text-blue-700   border border-blue-200',    dot: 'bg-blue-400'    },
+  en_curso:   { label: 'En curso',   cls: 'bg-purple-50 text-purple-700 border border-purple-200',  dot: 'bg-purple-400'  },
+  completada: { label: 'Completada', cls: 'bg-green-50  text-green-700  border border-green-200',   dot: 'bg-green-400'   },
+  cancelada:  { label: 'Cancelada',  cls: 'bg-red-50    text-red-700    border border-red-200',     dot: 'bg-red-400'     },
 }
 const ESTADOS    = Object.keys(ESTADO_CFG)
 const CIUDADES   = ['Bogotá','Medellín','Cali','Barranquilla','Cartagena','Bucaramanga','Pereira','Manizales','Ibagué','Neiva','Villavicencio','Pasto']
 const CATEGORIAS = ['Plomería','Electricidad','Cerrajería','Pintura','Aire acondicionado','Jardinería','Limpieza','Otro']
+const CAT_ICONS  = { 'Plomería':'🔧','Electricidad':'⚡','Cerrajería':'🔑','Pintura':'🎨','Aire acondicionado':'❄️','Jardinería':'🪴','Limpieza':'🧹','Otro':'🛠️' }
+
+// ─── Tiempo transcurrido + urgencia ─────────────────────────────────────────
+function TiempoTranscurrido({ fecha }) {
+  const mins = Math.floor((Date.now() - new Date(fecha)) / 60000)
+  const horas = Math.floor(mins / 60)
+  const label = mins < 60
+    ? `hace ${mins} min`
+    : horas < 24
+    ? `hace ${horas}h ${mins % 60}min`
+    : `hace ${Math.floor(horas / 24)}d`
+
+  const cls = mins < 60
+    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    : mins < 240
+    ? 'bg-amber-50 text-amber-700 border-amber-200'
+    : 'bg-red-50 text-red-600 border-red-200'
+
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${cls}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${mins < 60 ? 'bg-emerald-400' : mins < 240 ? 'bg-amber-400' : 'bg-red-400'} animate-pulse`} />
+      {label}
+    </span>
+  )
+}
 
 // ─── Badge ───────────────────────────────────────────────────────────────────
 function Badge({ estado }) {
   const cfg = ESTADO_CFG[estado] || { label: estado, cls: 'bg-gray-50 text-gray-600 border border-gray-200' }
-  return <span className={`inline-flex text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.cls}`}>{cfg.label}</span>
+  return <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full ${cfg.cls}`}>
+    {cfg.dot && <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />}
+    {cfg.label}
+  </span>
 }
 
 // ─── Login ────────────────────────────────────────────────────────────────────
@@ -381,6 +409,7 @@ function SolicitudesView({ solicitudes, tecnicos, onUpdateEstado, onAsignarTecni
   const [filE, setFilE]       = useState('')
   const [filC, setFilC]       = useState('')
   const [filCat, setFilCat]   = useState('')
+  const [expandedId, setExpandedId] = useState(null)
 
   const filtered = useMemo(() => solicitudes.filter(s => {
     const q = search.toLowerCase()
@@ -391,15 +420,26 @@ function SolicitudesView({ solicitudes, tecnicos, onUpdateEstado, onAsignarTecni
     return true
   }), [solicitudes, search, filE, filC, filCat])
 
+  const urgentes = filtered.filter(s => s.estado === 'pendiente' &&
+    (Date.now() - new Date(s.created_at)) > 2 * 60 * 60 * 1000).length
+
   return (
     <div className="p-4 md:p-6 w-full">
-      <div className="mb-4">
-        <h2 className="text-lg md:text-xl font-extrabold text-gray-900">Solicitudes</h2>
-        <p className="text-sm text-gray-400 mt-0.5">{filtered.length} de {solicitudes.length} solicitudes</p>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg md:text-xl font-extrabold text-gray-900">Solicitudes</h2>
+          <p className="text-sm text-gray-400 mt-0.5">{filtered.length} de {solicitudes.length} solicitudes</p>
+        </div>
+        {urgentes > 0 && (
+          <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full animate-pulse flex-shrink-0">
+            🚨 {urgentes} urgente{urgentes > 1 ? 's' : ''}
+          </div>
+        )}
       </div>
+
       {/* Filtros */}
       <div className="grid grid-cols-2 sm:flex flex-wrap gap-2 mb-4">
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..."
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cliente..."
           className="col-span-2 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-full sm:flex-1 sm:min-w-[160px]" />
         <select value={filE} onChange={e => setFilE(e.target.value)} className="border border-gray-200 rounded-xl px-2.5 py-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
           <option value="">Estado</option>
@@ -409,42 +449,128 @@ function SolicitudesView({ solicitudes, tecnicos, onUpdateEstado, onAsignarTecni
           <option value="">Ciudad</option>
           {CIUDADES.map(c => <option key={c}>{c}</option>)}
         </select>
+        <select value={filCat} onChange={e => setFilCat(e.target.value)} className="border border-gray-200 rounded-xl px-2.5 py-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <option value="">Categoría</option>
+          {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
+        </select>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center py-12">No se encontraron solicitudes</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center">
+          <div className="text-4xl mb-3">📋</div>
+          <p className="text-gray-500 font-semibold">No se encontraron solicitudes</p>
+        </div>
       ) : (
         <div className="space-y-3">
           {filtered.map(s => {
-            const tecDisp = tecnicos.filter(t => t.activo && t.ciudad === s.ciudad)
+            const tecDisp   = tecnicos.filter(t => t.activo && t.ciudad === s.ciudad)
+            const asignado  = tecnicos.find(t => t.id === s.tecnico_id)
+            const isExpanded = expandedId === s.id
+            const minsEspera = Math.floor((Date.now() - new Date(s.created_at)) / 60000)
+            const esUrgente  = s.estado === 'pendiente' && minsEspera > 120
+
             return (
-              <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="min-w-0">
-                    <p className="font-bold text-gray-800 text-sm truncate">{s.cliente_nombre}</p>
-                    <p className="text-xs text-gray-400">{s.cliente_telefono}</p>
+              <div key={s.id}
+                className={`bg-white rounded-2xl border shadow-sm transition-all ${
+                  esUrgente ? 'border-red-200 shadow-red-100' : 'border-gray-100'
+                }`}
+              >
+                {/* ── Cabecera de la card ── */}
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {/* Ícono servicio */}
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg flex-shrink-0">
+                        {CAT_ICONS[s.categoria] || '🛠️'}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-gray-800 text-sm truncate">{s.cliente_nombre}</p>
+                        <p className="text-xs text-gray-400 truncate">{s.categoria} · {s.ciudad}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <Badge estado={s.estado} />
+                      <TiempoTranscurrido fecha={s.created_at} />
+                    </div>
                   </div>
-                  <Badge estado={s.estado} />
+
+                  {/* URGENTE banner */}
+                  {esUrgente && (
+                    <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5 mb-2">
+                      <span className="text-xs">🚨</span>
+                      <p className="text-xs font-bold text-red-600">URGENTE — Sin asignar hace más de 2 horas</p>
+                    </div>
+                  )}
+
+                  {/* Descripción */}
+                  {s.descripcion && (
+                    <p className="text-xs text-gray-500 mb-3 line-clamp-2 leading-relaxed">{s.descripcion}</p>
+                  )}
+
+                  {/* ── Acciones de contacto rápido ── */}
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <a href={`tel:${s.cliente_telefono}`}
+                      className="flex items-center gap-1 text-xs font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-2.5 py-1.5 rounded-lg transition-colors">
+                      📞 {s.cliente_telefono}
+                    </a>
+                    <a href={`https://wa.me/57${s.cliente_telefono}?text=Hola ${s.cliente_nombre}, te contactamos de ServiYa sobre tu solicitud de ${s.categoria}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs font-semibold text-[#25D366] bg-green-50 hover:bg-green-100 border border-green-200 px-2.5 py-1.5 rounded-lg transition-colors">
+                      💬 WhatsApp
+                    </a>
+                    <button onClick={() => setExpandedId(isExpanded ? null : s.id)}
+                      className="ml-auto text-xs font-semibold text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+                      {isExpanded ? '▲ Menos' : '▼ Gestionar'}
+                    </button>
+                  </div>
+
+                  {/* ── Panel de gestión expandible ── */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-100 pt-3 space-y-3">
+                      {/* Cambiar estado — botones directos */}
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Cambiar estado</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {ESTADOS.filter(e => e !== s.estado).map(e => {
+                            const cfg = ESTADO_CFG[e]
+                            const icons = { pendiente:'⏳', asignada:'📋', en_curso:'▶', completada:'✅', cancelada:'✕' }
+                            return (
+                              <button key={e} onClick={() => onUpdateEstado(s.id, e)}
+                                className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80 active:scale-95 ${cfg.cls}`}>
+                                {icons[e]} {cfg.label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Asignar técnico */}
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                          Asignar técnico {asignado && <span className="text-emerald-600 normal-case">— Actual: {asignado.nombre}</span>}
+                        </p>
+                        <div className="flex gap-2">
+                          <select value={s.tecnico_id || ''} onChange={e => onAsignarTecnico(s.id, e.target.value || null)}
+                            className="flex-1 border border-gray-200 rounded-lg text-xs px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            <option value="">Sin asignar</option>
+                            {tecDisp.map(t => (
+                              <option key={t.id} value={t.id}>{t.nombre} — {t.categoria}</option>
+                            ))}
+                          </select>
+                        </div>
+                        {tecDisp.length === 0 && (
+                          <p className="text-[10px] text-amber-600 mt-1">⚠ No hay técnicos activos en {s.ciudad}</p>
+                        )}
+                      </div>
+
+                      {/* Dir + fecha */}
+                      <div className="flex gap-3 text-xs text-gray-400">
+                        {s.direccion && <span>📍 {s.direccion}</span>}
+                        <span className="ml-auto">{new Date(s.created_at).toLocaleString('es-CO', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{s.ciudad}</span>
-                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">{s.categoria}</span>
-                </div>
-                {s.descripcion && <p className="text-xs text-gray-500 mb-3 line-clamp-2">{s.descripcion}</p>}
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <select value={s.estado} onChange={e => onUpdateEstado(s.id, e.target.value)}
-                    className="border border-gray-200 rounded-lg text-xs px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 flex-1 min-w-[110px]">
-                    {ESTADOS.map(e => <option key={e}>{e}</option>)}
-                  </select>
-                  <select value={s.tecnico_id || ''} onChange={e => onAsignarTecnico(s.id, e.target.value || null)}
-                    className="border border-gray-200 rounded-lg text-xs px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 flex-1 min-w-[110px]">
-                    <option value="">Sin asignar</option>
-                    {tecDisp.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
-                  </select>
-                </div>
-                <p className="text-[10px] text-gray-300 mt-2">
-                  {new Date(s.created_at).toLocaleDateString('es-CO', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
-                </p>
               </div>
             )
           })}

@@ -5,23 +5,45 @@ import { supabase } from '@/lib/supabase'
 import PanelFooter from '@/components/PanelFooter'
 import Logo from '@/components/Logo'
 
-
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
 const ESTADO_CFG = {
-  pendiente:  { label: 'Pendiente',  cls: 'bg-amber-50  text-amber-700  border border-amber-200'   },
-  asignada:   { label: 'Asignada',   cls: 'bg-blue-50   text-blue-700   border border-blue-200'    },
-  en_curso:   { label: 'En curso',   cls: 'bg-purple-50 text-purple-700 border border-purple-200'  },
-  completada: { label: 'Completada', cls: 'bg-green-50  text-green-700  border border-green-200'   },
-  cancelada:  { label: 'Cancelada',  cls: 'bg-red-50    text-red-700    border border-red-200'     },
+  pendiente:  { label: 'Pendiente',  cls: 'bg-amber-50  text-amber-700  border border-amber-200'  },
+  asignada:   { label: 'Asignada',   cls: 'bg-blue-50   text-blue-700   border border-blue-200'   },
+  en_curso:   { label: 'En curso',   cls: 'bg-purple-50 text-purple-700 border border-purple-200' },
+  completada: { label: 'Completada', cls: 'bg-green-50  text-green-700  border border-green-200'  },
+  cancelada:  { label: 'Cancelada',  cls: 'bg-red-50    text-red-700    border border-red-200'    },
 }
 const SIGUIENTE_ESTADO = { asignada: 'en_curso', en_curso: 'completada' }
 const CAT_ICONS = { Plomería:'🔧', Electricidad:'⚡', Cerrajería:'🔑', Pintura:'🎨', 'Aire acondicionado':'❄️', Jardinería:'🪴', Limpieza:'🧹', Otro:'🛠️' }
+
+// GA4 helper
+function trackGA4(event, params = {}) {
+  if (typeof window !== 'undefined' && window.gtag) window.gtag('event', event, params)
+}
 
 function Badge({ estado }) {
   const cfg = ESTADO_CFG[estado] || { label: estado, cls: 'bg-gray-50 text-gray-600 border border-gray-200' }
   return <span className={`inline-flex text-xs font-semibold px-2.5 py-1 rounded-full ${cfg.cls}`}>{cfg.label}</span>
 }
+
+// Badge de tiempo transcurrido
+function TiempoChip({ fecha }) {
+  const mins = Math.floor((Date.now() - new Date(fecha)) / 60000)
+  const label = mins < 60 ? `hace ${mins} min` : `hace ${Math.floor(mins/60)}h`
+  const cls = mins < 60
+    ? 'bg-emerald-100 text-emerald-700'
+    : mins < 120
+    ? 'bg-amber-100 text-amber-700'
+    : 'bg-red-100 text-red-600'
+  return (
+    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cls} flex items-center gap-1`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${mins < 60 ? 'bg-emerald-400' : mins < 120 ? 'bg-amber-400' : 'bg-red-400'} animate-pulse`} />
+      {label}
+    </span>
+  )
+}
+
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 function LoginScreen({ onSuccess }) {
@@ -325,14 +347,82 @@ function DashboardView({ tecnico, misSolicitudes, disponiblesCount, setView }) {
   )
 }
 
-// ─── Solicitudes disponibles ──────────────────────────────────────────────────
+// ─── Solicitudes disponibles ─────────────────────────────────────────────────────
 function DisponiblesView({ disponibles, onAceptar }) {
+  const [confirmModal, setConfirmModal] = useState(null) // solicitud a confirmar
+  const [accepting, setAccepting]       = useState(false)
+
+  const handleConfirm = async () => {
+    if (!confirmModal) return
+    setAccepting(true)
+    await onAceptar(confirmModal.id)
+    // GA4: técnico acepta trabajo
+    trackGA4('add_to_cart', {
+      currency: 'COP',
+      items: [{ item_name: confirmModal.categoria, item_category: confirmModal.ciudad }],
+    })
+    setAccepting(false)
+    setConfirmModal(null)
+  }
+
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
+      {/* Modal de confirmación */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setConfirmModal(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-5">
+              <div className="text-4xl mb-3">{CAT_ICONS[confirmModal.categoria] || '🛠️'}</div>
+              <h3 className="text-lg font-extrabold text-gray-900">Aceptar esta solicitud</h3>
+              <p className="text-sm text-gray-500 mt-1">Confirma que puedes atender este servicio</p>
+            </div>
+            <div className="bg-gray-50 rounded-2xl p-4 space-y-2 mb-5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Servicio</span>
+                <span className="font-bold text-gray-800">{confirmModal.categoria}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Ciudad</span>
+                <span className="font-bold text-gray-800">{confirmModal.ciudad}</span>
+              </div>
+              {confirmModal.direccion && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Dirección</span>
+                  <span className="font-bold text-gray-800 text-right max-w-[60%]">{confirmModal.direccion}</span>
+                </div>
+              )}
+              <div className="pt-2 border-t border-gray-200">
+                <p className="text-xs text-gray-500 leading-relaxed">{confirmModal.descripcion}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setConfirmModal(null)}
+                className="py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-all">
+                Cancelar
+              </button>
+              <button onClick={handleConfirm} disabled={accepting}
+                className="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-all disabled:opacity-60 active:scale-95">
+                {accepting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Aceptando...
+                  </span>
+                ) : '✓ Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-5">
         <h2 className="text-xl font-extrabold text-gray-900">Solicitudes disponibles</h2>
-        <p className="text-sm text-gray-400 mt-0.5">Solicitudes pendientes en tu ciudad — sé el primero en aceptar</p>
+        <p className="text-sm text-gray-400 mt-0.5">
+          {disponibles.length > 0
+            ? `${disponibles.length} solicitud${disponibles.length > 1 ? 'es' : ''} esperando en tu ciudad`
+            : 'Solicitudes pendientes en tu ciudad'}
+        </p>
       </div>
+
       {disponibles.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-5xl mb-4">🎉</div>
@@ -341,55 +431,139 @@ function DisponiblesView({ disponibles, onAceptar }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {disponibles.map(s => (
-            <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{CAT_ICONS[s.categoria] || '🛠️'}</span>
-                  <div>
-                    <p className="text-sm font-bold text-gray-800">{s.categoria}</p>
-                    <p className="text-xs text-gray-400">{s.ciudad}</p>
+          {disponibles.map(s => {
+            const minsEspera = Math.floor((Date.now() - new Date(s.created_at)) / 60000)
+            const esUrgente  = minsEspera > 120
+            return (
+              <div key={s.id}
+                className={`bg-white rounded-2xl border shadow-sm p-5 hover:shadow-md transition-all ${
+                  esUrgente ? 'border-red-200' : 'border-gray-100'
+                }`}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center text-2xl flex-shrink-0">
+                      {CAT_ICONS[s.categoria] || '🛠️'}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-800">{s.categoria}</p>
+                      <p className="text-xs text-gray-400">{s.ciudad}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <TiempoChip fecha={s.created_at} />
+                    {esUrgente && (
+                      <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">⚠ URGENTE</span>
+                    )}
                   </div>
                 </div>
-                <span className="text-xs text-gray-400">
-                  {new Date(s.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
-                </span>
+
+                {/* Descripción */}
+                <p className="text-sm text-gray-600 mb-3 leading-relaxed line-clamp-3">{s.descripcion}</p>
+
+                {/* Detalles */}
+                {s.direccion && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-4">
+                    <span>📍</span>
+                    <span>{s.direccion}</span>
+                  </div>
+                )}
+
+                {/* Botón aceptar */}
+                <button onClick={() => setConfirmModal(s)}
+                  className={`w-full text-white text-sm font-bold py-3 rounded-xl transition-all active:scale-95 ${
+                    esUrgente
+                      ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20'
+                      : 'bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20'
+                  }`}
+                >
+                  {esUrgente ? '🚨 Aceptar urgente ✓' : 'Aceptar solicitud ✓'}
+                </button>
               </div>
-              <p className="text-sm text-gray-600 mb-2 leading-relaxed line-clamp-3">{s.descripcion}</p>
-              {s.direccion && <p className="text-xs text-gray-400 mb-4">📍 {s.direccion}</p>}
-              <button onClick={() => onAceptar(s.id)}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2.5 rounded-xl transition-all active:scale-95"
-              >Aceptar solicitud ✓</button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
   )
 }
 
-// ─── Mis solicitudes ──────────────────────────────────────────────────────────
+// ─── Mis solicitudes ─────────────────────────────────────────────────────────────────
 function MiasSolicitudesView({ solicitudes, onUpdateEstado }) {
+  const [confirmComplete, setConfirmComplete] = useState(null)
+
+  const TIMELINE = ['asignada', 'en_curso', 'completada']
+  const TIMELINE_CFG = {
+    asignada:   { icon: '📋', label: 'Asignada'    },
+    en_curso:   { icon: '▶️',  label: 'En camino'   },
+    completada: { icon: '✅',  label: 'Completada'  },
+  }
+
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <div className="mb-5">
         <h2 className="text-xl font-extrabold text-gray-900">Mis solicitudes</h2>
         <p className="text-sm text-gray-400 mt-0.5">Solicitudes que has aceptado</p>
       </div>
+
+      {/* Modal confirmación "Completada" */}
+      {confirmComplete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setConfirmComplete(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-5">
+              <div className="text-4xl mb-3">✅</div>
+              <h3 className="text-lg font-extrabold text-gray-900">¿Marcar como completada?</h3>
+              <p className="text-sm text-gray-500 mt-1">Confirma que el servicio fue realizado exitosamente</p>
+            </div>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-5">
+              <p className="text-sm font-bold text-emerald-800 mb-1">{confirmComplete.categoria} — {confirmComplete.ciudad}</p>
+              <p className="text-xs text-emerald-700/70">{confirmComplete.descripcion?.slice(0, 80)}...</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setConfirmComplete(null)}
+                className="py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50">
+                Cancelar
+              </button>
+              <button onClick={async () => {
+                await onUpdateEstado(confirmComplete.id, 'completada')
+                // GA4: servicio completado
+                trackGA4('purchase', {
+                  currency: 'COP',
+                  items: [{ item_name: confirmComplete.categoria, item_category: confirmComplete.ciudad }],
+                })
+                setConfirmComplete(null)
+              }}
+                className="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-all active:scale-95">
+                ✓ Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {solicitudes.length === 0 ? (
         <div className="text-center py-16">
-          <div className="text-5xl mb-4">📭</div>
+          <div className="text-5xl mb-4">📫</div>
           <p className="text-gray-500 font-medium">Aún no has aceptado ninguna solicitud.</p>
         </div>
       ) : (
         <div className="space-y-4">
           {solicitudes.map(s => {
             const siguiente = SIGUIENTE_ESTADO[s.estado]
+            const timelineStep = TIMELINE.indexOf(s.estado)
+
             return (
-              <div key={s.id} className={`bg-white rounded-2xl border shadow-sm p-5 ${s.estado === 'completada' ? 'border-green-100 opacity-75' : 'border-gray-100'}`}>
+              <div key={s.id} className={`bg-white rounded-2xl border shadow-sm p-5 ${
+                s.estado === 'completada' ? 'border-green-100 opacity-80' : 'border-gray-100'
+              }`}>
+
+                {/* Header */}
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{CAT_ICONS[s.categoria] || '🛠️'}</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center text-2xl flex-shrink-0">
+                      {CAT_ICONS[s.categoria] || '🛠️'}
+                    </div>
                     <div>
                       <p className="text-sm font-bold text-gray-800">{s.categoria}</p>
                       <p className="text-xs text-gray-400">{s.ciudad}</p>
@@ -397,27 +571,78 @@ function MiasSolicitudesView({ solicitudes, onUpdateEstado }) {
                   </div>
                   <Badge estado={s.estado} />
                 </div>
+
+                {/* Timeline visual */}
+                {s.estado !== 'cancelada' && (
+                  <div className="flex items-center gap-0 mb-4 mt-1">
+                    {TIMELINE.map((step, i) => {
+                      const done    = i <= timelineStep
+                      const current = i === timelineStep && s.estado !== 'completada'
+                      return (
+                        <>
+                          <div key={step} className="flex flex-col items-center">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                              done ? 'bg-emerald-500 text-white shadow-md shadow-emerald-300/40' : 'bg-gray-100 text-gray-400'
+                            } ${current ? 'ring-2 ring-emerald-300 ring-offset-1' : ''}`}>
+                              {done ? (TIMELINE_CFG[step].icon) : (i+1)}
+                            </div>
+                            <span className={`text-[9px] mt-1 font-semibold ${done ? 'text-emerald-600' : 'text-gray-300'}`}>
+                              {TIMELINE_CFG[step].label}
+                            </span>
+                          </div>
+                          {i < TIMELINE.length - 1 && (
+                            <div className={`flex-1 h-0.5 mb-3 mx-1 transition-all ${i < timelineStep ? 'bg-emerald-400' : 'bg-gray-100'}`} />
+                          )}
+                        </>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Descripción */}
                 <p className="text-sm text-gray-600 mb-3 leading-relaxed">{s.descripcion}</p>
+
+                {/* Cliente info */}
                 <div className="bg-gray-50 rounded-xl p-3 mb-3 flex items-center gap-3">
-                  <span className="text-lg">👤</span>
-                  <div>
+                  <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">
+                    {s.cliente_nombre?.charAt(0) || '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800">{s.cliente_nombre}</p>
                     <a href={`tel:${s.cliente_telefono}`} className="text-sm text-emerald-600 font-bold hover:underline">{s.cliente_telefono}</a>
                   </div>
                   <a href={`https://wa.me/57${s.cliente_telefono}?text=Hola ${s.cliente_nombre}, soy tu técnico de ServiYa para ${s.categoria}`}
                     target="_blank" rel="noopener noreferrer"
-                    className="ml-auto bg-[#25D366] text-white text-xs font-bold px-3 py-1.5 rounded-lg"
-                  >WhatsApp</a>
+                    className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white text-xs font-bold px-3 py-2 rounded-xl transition-all flex-shrink-0">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    WhatsApp
+                  </a>
                 </div>
+
+                {/* Acción de estado */}
                 {siguiente && s.estado !== 'cancelada' && (
-                  <button onClick={() => onUpdateEstado(s.id, siguiente)}
-                    className={`w-full text-sm font-bold py-2.5 rounded-xl transition-all active:scale-95 ${
-                      siguiente === 'en_curso' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  <button
+                    onClick={() => siguiente === 'completada'
+                      ? setConfirmComplete(s)
+                      : onUpdateEstado(s.id, siguiente)
+                    }
+                    className={`w-full text-sm font-bold py-3 rounded-xl transition-all active:scale-95 ${
+                      siguiente === 'en_curso'
+                        ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/20'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20'
                     }`}
                   >
-                    {siguiente === 'en_curso' ? '▶ Marcar como "En curso"' : '✓ Marcar como completada'}
+                    {siguiente === 'en_curso' ? '▶ Estoy en camino' : '✅ Marcar como completada'}
                   </button>
                 )}
+
+                {s.estado === 'completada' && (
+                  <div className="text-center py-2">
+                    <p className="text-sm font-bold text-emerald-600">🎉 Servicio completado</p>
+                    <Link href="/tecnico/cobrar" className="text-xs text-emerald-500 hover:underline mt-0.5 block">Cobrar este servicio →</Link>
+                  </div>
+                )}
+
               </div>
             )
           })}
