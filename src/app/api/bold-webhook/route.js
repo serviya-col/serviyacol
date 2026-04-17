@@ -19,16 +19,17 @@ export async function POST(req) {
       .update(encodedBody)
       .digest('hex')
 
-    // En modo pruebas, secretKey es string vacío, por eso dejarmos pasar si está vacío
-    const firmesValida =
+    // En modo pruebas, secretKey es string vacío, por eso dejamos pasar si está vacío
+    const firmaValida =
       !secretKey ||
       secretKey === 'REEMPLAZAR_CON_TU_WEBHOOK_SECRET_BOLD' ||
-      crypto.timingSafeEqual(
-        Buffer.from(calculatedHmac, 'hex'),
-        Buffer.from(receivedSignature, 'hex')
-      )
+      (receivedSignature.length === calculatedHmac.length &&
+        crypto.timingSafeEqual(
+          Buffer.from(calculatedHmac, 'hex'),
+          Buffer.from(receivedSignature, 'hex')
+        ))
 
-    if (!firmesValida) {
+    if (!firmaValida) {
       console.warn('Bold webhook: firma inválida')
       return NextResponse.json({ error: 'Firma inválida' }, { status: 400 })
     }
@@ -37,80 +38,125 @@ export async function POST(req) {
     const event = JSON.parse(rawBody)
     const tipo  = event.type // SALE_APPROVED | SALE_REJECTED | VOID_APPROVED | VOID_REJECTED
 
-    const referencia   = event.data?.metadata?.reference || event.subject || ''
+    const referencia    = event.data?.metadata?.reference || event.subject || ''
     const boldPaymentId = event.data?.payment_id || ''
 
     if (!referencia) {
       console.warn('Bold webhook: sin referencia en el evento')
-      return NextResponse.json({ ok: true }) // Responder 200 para que Bold no reintente
+      return NextResponse.json({ ok: true }) // 200 para que Bold no reintente
     }
 
-    // ── 4. Actualizar estado en Supabase ────────────────────────────────────
-    let nuevoEstado = null
+    // ── 4. Mapear tipo → estado ─────────────────────────────────────────────
+    let nuevoEstadoCobro = null
 
     if (tipo === 'SALE_APPROVED') {
-      nuevoEstado = 'pagado'
+      nuevoEstadoCobro = 'pagado'
     } else if (tipo === 'SALE_REJECTED' || tipo === 'VOID_APPROVED') {
-      nuevoEstado = 'fallido'
+      nuevoEstadoCobro = 'fallido'
     }
 
-    if (nuevoEstado) {
-      const updateData = { estado: nuevoEstado }
-      if (boldPaymentId) updateData.bold_payment_id = boldPaymentId
-      if (nuevoEstado === 'pagado') updateData.fecha_pago = new Date().toISOString()
+    if (!nuevoEstadoCobro) {
+      console.log(`Bold webhook: tipo no manejado: ${tipo}`)
+      return NextResponse.json({ ok: true })
+    }
 
-      const { error } = await supabaseAdmin
-        .from('cobros')
-        .update(updateData)
-        .eq('referencia', referencia)
+    // ── 5. Actualizar cobro en Supabase ─────────────────────────────────────
+    const updateData = { estado: nuevoEstadoCobro }
+    if (boldPaymentId) updateData.bold_payment_id = boldPaymentId
+    if (nuevoEstadoCobro === 'pagado') updateData.fecha_pago = new Date().toISOString()
 
-      if (error) {
-        console.error('Supabase update error en webhook:', error)
-      } else {
-        console.log(`Cobro ${referencia} actualizado a ${nuevoEstado}`)
+    const { error: updateErr } = await supabaseAdmin
+      .from('cobros')
+      .update(updateData)
+      .eq('referencia', referencia)
 
-        // ── Notificar pago confirmado ────────────────────────────────────────
-        if (nuevoEstado === 'pagado') {
-          try {
-            // Buscar el cobro completo + email del técnico
-            const { data: cobro } = await supabaseAdmin
-              .from('cobros').select('*').eq('referencia', referencia).single()
+    if (updateErr) {
+      console.error('Supabase update error en webhook:', updateErr)
+      return NextResponse.json({ ok: true }) // 200 igual para evitar reintentos
+    }
 
-            if (cobro?.tecnico_id) {
-              const { data: tec } = await supabaseAdmin
-                .from('tecnicos').select('email, telefono').eq('id', cobro.tecnico_id).single()
-              if (tec) {
-                cobro.tecnico_email   = tec.email
-                cobro.tecnico_telefono = cobro.tecnico_telefono || tec.telefono
-              }
-            }
-            if (cobro) {
-              await notifyPagoConfirmado({ cobro })
-              
-              // ── Track Meta Purchase via CAPI ──────────────────────────────────────
-              const { sendMetaEvent } = await import('@/lib/meta-capi')
-              await sendMetaEvent('Purchase', {
-                currency: 'COP',
-                value: cobro.valor_total,
-                content_name: cobro.descripcion || 'Servicio ServiYa',
-                order_id: cobro.referencia
-              }, {
-                email: cobro.tecnico_email,
-                telefono: cobro.tecnico_telefono
-              })
-            }
-          } catch (notifyErr) {
-            console.warn('Notify pago error:', notifyErr.message)
-          }
-        }
+    console.log(`Cobro ${referencia} → ${nuevoEstadoCobro}`)
+
+    // ── 6. Obtener cobro completo para acciones secundarias ─────────────────
+    const { data: cobro } = await supabaseAdmin
+      .from('cobros')
+      .select('*')
+      .eq('referencia', referencia)
+      .single()
+
+    if (!cobro) {
+      return NextResponse.json({ ok: true })
+    }
+
+    // ── 7. Actualizar la solicitud vinculada (si existe) ────────────────────
+    // Estrategia: buscar por solicitud_id primero, luego por tecnico_id + cliente_telefono
+    if (cobro.solicitud_id) {
+      // Columna directa (si fue vinculada al crear el cobro)
+      const nuevoEstadoSolicitud = nuevoEstadoCobro === 'pagado' ? 'completada' : 'cancelada'
+      await supabaseAdmin
+        .from('solicitudes')
+        .update({ estado: nuevoEstadoSolicitud })
+        .eq('id', cobro.solicitud_id)
+      console.log(`Solicitud ${cobro.solicitud_id} → ${nuevoEstadoSolicitud}`)
+    } else if (cobro.tecnico_id && cobro.cliente_telefono) {
+      // Fallback: buscar la solicitud más reciente asignada a este técnico con este cliente
+      const nuevoEstadoSolicitud = nuevoEstadoCobro === 'pagado' ? 'completada' : 'cancelada'
+      const { data: sols } = await supabaseAdmin
+        .from('solicitudes')
+        .select('id, estado')
+        .eq('tecnico_id', cobro.tecnico_id)
+        .eq('cliente_telefono', cobro.cliente_telefono)
+        .in('estado', ['asignada', 'en_curso'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (sols && sols.length > 0) {
+        await supabaseAdmin
+          .from('solicitudes')
+          .update({ estado: nuevoEstadoSolicitud })
+          .eq('id', sols[0].id)
+        console.log(`Solicitud ${sols[0].id} → ${nuevoEstadoSolicitud} (por teléfono)`)
       }
     }
 
-    // ── 5. Responder 200 inmediatamente (Bold requiere < 2 segundos) ────────
+    // ── 8. Notificaciones y tracking (solo en pagos aprobados) ──────────────
+    if (nuevoEstadoCobro === 'pagado') {
+      try {
+        // Adjuntar datos del técnico para la notificación
+        if (cobro.tecnico_id) {
+          const { data: tec } = await supabaseAdmin
+            .from('tecnicos')
+            .select('email, telefono')
+            .eq('id', cobro.tecnico_id)
+            .single()
+          if (tec) {
+            cobro.tecnico_email    = tec.email
+            cobro.tecnico_telefono = cobro.tecnico_telefono || tec.telefono
+          }
+        }
+
+        await notifyPagoConfirmado({ cobro })
+
+        // Track Meta Purchase via CAPI
+        const { sendMetaEvent } = await import('@/lib/meta-capi')
+        await sendMetaEvent('Purchase', {
+          currency: 'COP',
+          value: cobro.valor_total,
+          content_name: cobro.descripcion || 'Servicio ServiYa',
+          order_id: cobro.referencia,
+        }, {
+          email:    cobro.tecnico_email,
+          telefono: cobro.tecnico_telefono,
+        })
+      } catch (notifyErr) {
+        console.warn('Notify/Meta error:', notifyErr.message)
+      }
+    }
+
+    // ── 9. Responder 200 (Bold requiere < 2 segundos) ───────────────────────
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('bold-webhook error:', err)
-    // Aún respondemos 200 para evitar reintentos en errores no críticos
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true }) // 200 siempre para evitar reintentos
   }
 }

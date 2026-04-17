@@ -218,89 +218,186 @@ function MobileBottomNav({ view, setView, pendientes, sinVerificar, cobrosCount 
 // ─── CobrosView ────────────────────────────────────────────────────────────────
 function CobrosView({ cobros, onMarcarPagado }) {
   const fmt = (v) => '$' + Number(v || 0).toLocaleString('es-CO')
+  const [filtroEstado, setFiltroEstado] = useState('')
+  const [lastRefresh] = useState(new Date())
+
   const ESTADO_COBRO = {
-    pendiente:   { label: 'Pendiente',   cls: 'bg-amber-50  text-amber-700  border border-amber-200'  },
-    pagado:      { label: 'Pagado',      cls: 'bg-green-50  text-green-700  border border-green-200'  },
-    fallido:     { label: 'Fallido',     cls: 'bg-red-50    text-red-700    border border-red-200'    },
-    reembolsado: { label: 'Reembolsado',cls: 'bg-purple-50 text-purple-700 border border-purple-200' },
+    pendiente:   { label: 'Pendiente',    cls: 'bg-amber-50  text-amber-700  border-amber-200',  dot: 'bg-amber-400'  },
+    pagado:      { label: 'Pagado ✔',     cls: 'bg-green-50  text-green-700  border-green-200',  dot: 'bg-green-400'  },
+    fallido:     { label: 'Fallido',      cls: 'bg-red-50    text-red-700    border-red-200',    dot: 'bg-red-400'    },
+    reembolsado: { label: 'Reembolsado', cls: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-400' },
   }
+
+  // Métricas derivadas
   const pagados       = cobros.filter(c => c.estado === 'pagado')
+  const fallidos      = cobros.filter(c => c.estado === 'fallido')
+  const pendientes    = cobros.filter(c => c.estado === 'pendiente')
   const totalProcess  = pagados.reduce((s, c) => s + (c.valor_total    || 0), 0)
   const totalComision = pagados.reduce((s, c) => s + (c.valor_comision || 0), 0)
   const pendPago      = pagados.filter(c => !c.pagado_tecnico).reduce((s, c) => s + (c.valor_tecnico || 0), 0)
 
+  // Filtrado por estado
+  const filtered = filtroEstado ? cobros.filter(c => c.estado === filtroEstado) : cobros
+
+  const TABS = [
+    { key: '',           label: 'Todo',      count: cobros.length      },
+    { key: 'pendiente',  label: 'Pendiente', count: pendientes.length  },
+    { key: 'pagado',     label: 'Pagados',   count: pagados.length     },
+    { key: 'fallido',    label: 'Fallidos',  count: fallidos.length    },
+  ]
+
+
+
   return (
     <div className="p-4 md:p-6 w-full max-w-6xl mx-auto">
-      <div className="mb-4">
-        <h2 className="text-lg md:text-xl font-extrabold text-gray-900">Cobros y pagos</h2>
-        <p className="text-sm text-gray-400 mt-0.5">Historial generado por técnicos con Bold</p>
-      </div>
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm">
-          <div className="text-xl mb-1">💰</div>
-          <div className="text-sm md:text-lg font-extrabold text-emerald-600 leading-tight">{fmt(totalProcess)}</div>
-          <div className="text-[10px] text-gray-400 mt-0.5">Total procesado</div>
+
+      {/* Header */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg md:text-xl font-extrabold text-gray-900">Cobros y pagos</h2>
+          <p className="text-sm text-gray-400 mt-0.5">Historial generado por técnicos con Bold</p>
         </div>
-        <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm">
-          <div className="text-xl mb-1">🏦</div>
-          <div className="text-sm md:text-lg font-extrabold text-blue-600 leading-tight">{fmt(totalComision)}</div>
-          <div className="text-[10px] text-gray-400 mt-0.5">Comisión ServiYa</div>
-        </div>
-        <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm">
-          <div className="text-xl mb-1">⏳</div>
-          <div className="text-sm md:text-lg font-extrabold text-amber-600 leading-tight">{fmt(pendPago)}</div>
-          <div className="text-[10px] text-gray-400 mt-0.5">Pend. técnicos</div>
+        <div className="flex items-center gap-2 text-xs text-gray-400">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          Actualizado {lastRefresh.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
-      {cobros.length === 0 ? (
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">💰</span>
+            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Total cobrado</span>
+          </div>
+          <div className="text-base md:text-lg font-extrabold text-emerald-600">{fmt(totalProcess)}</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">{pagados.length} pagos confirmados</div>
+        </div>
+        <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">🏦</span>
+            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Comisión ServiYa</span>
+          </div>
+          <div className="text-base md:text-lg font-extrabold text-blue-600">{fmt(totalComision)}</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">15% de cada servicio</div>
+        </div>
+        <div className="bg-white rounded-2xl p-3 md:p-4 border border-amber-100 shadow-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">⏳</span>
+            <span className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide">Pend. técnicos</span>
+          </div>
+          <div className="text-base md:text-lg font-extrabold text-amber-600">{fmt(pendPago)}</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">{pagados.filter(c => !c.pagado_tecnico).length} sin pagar</div>
+        </div>
+        <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">📃</span>
+            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Pendientes</span>
+          </div>
+          <div className="text-base md:text-lg font-extrabold text-gray-600">{pendientes.length}</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">{fallidos.length > 0 ? `${fallidos.length} fallidos` : 'Sin fallidos'}</div>
+        </div>
+      </div>
+
+      {/* Alerta de cobros sin pagar al técnico */}
+      {pagados.filter(c => !c.pagado_tecnico).length > 0 && (
+        <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-4">
+          <span className="text-xl flex-shrink-0">🚨</span>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-amber-800">{pagados.filter(c => !c.pagado_tecnico).length} cobro(s) pagados sin transferir al técnico</p>
+            <p className="text-xs text-amber-600/80 mt-0.5">Revisa los cobros marcados como "Pagado" y liquida al técnico.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs de filtro */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {TABS.map(tab => (
+          <button key={tab.key} onClick={() => setFiltroEstado(tab.key)}
+            className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${
+              filtroEstado === tab.key
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-emerald-300'
+            }`}
+          >
+            {tab.label} <span className={`ml-1 ${filtroEstado === tab.key ? 'text-white/70' : 'text-gray-400'}`}>({tab.count})</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Lista */}
+      {filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center text-gray-400">
           <div className="text-4xl mb-3">💳</div>
-          <p className="font-semibold">Aún no hay cobros</p>
-          <p className="text-sm mt-1">Aparecerán aquí cuando los técnicos generen links de pago.</p>
+          <p className="font-semibold">No hay cobros con este filtro</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {cobros.map(c => {
-            const cfg = ESTADO_COBRO[c.estado] || { label: c.estado, cls: 'bg-gray-100 text-gray-600' }
+          {filtered.map(c => {
+            const cfg = ESTADO_COBRO[c.estado] || { label: c.estado, cls: 'bg-gray-50 text-gray-600 border-gray-200', dot: 'bg-gray-400' }
+            const minsDesde = Math.floor((Date.now() - new Date(c.created_at)) / 60000)
+            const tiempoLabel = minsDesde < 60
+              ? `hace ${minsDesde} min`
+              : minsDesde < 1440
+              ? `hace ${Math.floor(minsDesde/60)}h`
+              : `hace ${Math.floor(minsDesde/1440)}d`
+
             return (
-              <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div key={c.id} className={`bg-white rounded-2xl border shadow-sm p-4 ${
+                c.estado === 'pagado' && !c.pagado_tecnico ? 'border-amber-200' : 'border-gray-100'
+              }`}>
+                {/* Cabecera */}
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="min-w-0">
                     <p className="font-bold text-gray-800 text-sm truncate">{c.tecnico_nombre}</p>
-                    <p className="text-xs text-gray-400 truncate">→ {c.cliente_nombre}</p>
+                    <p className="text-xs text-gray-400 truncate">→ {c.cliente_nombre} · {c.cliente_telefono}</p>
                   </div>
-                  <span className={`inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.cls}`}>{cfg.label}</span>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg.cls}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${c.estado === 'pendiente' ? 'animate-pulse' : ''}`} />
+                      {cfg.label}
+                    </span>
+                    <span className="text-[10px] text-gray-400">{tiempoLabel}</span>
+                  </div>
                 </div>
-                {c.descripcion && <p className="text-xs text-gray-500 mb-2 line-clamp-1">{c.descripcion}</p>}
-                <div className="grid grid-cols-3 gap-2 mb-2">
+
+                {/* Descripción */}
+                {c.descripcion && <p className="text-xs text-gray-500 mb-3 line-clamp-1 leading-relaxed">{c.descripcion}</p>}
+
+                {/* Montos */}
+                <div className="grid grid-cols-3 gap-2 mb-3">
                   <div className="bg-gray-50 rounded-xl p-2 text-center">
                     <p className="text-[10px] text-gray-400">Cliente pagó</p>
-                    <p className="text-xs font-bold text-gray-800">{fmt(c.valor_total)}</p>
+                    <p className="text-xs font-extrabold text-gray-800">{fmt(c.valor_total)}</p>
                   </div>
-                  <div className="bg-amber-50 rounded-xl p-2 text-center">
-                    <p className="text-[10px] text-amber-600">Comisión</p>
-                    <p className="text-xs font-bold text-amber-700">{fmt(c.valor_comision)}</p>
+                  <div className="bg-blue-50 rounded-xl p-2 text-center">
+                    <p className="text-[10px] text-blue-500">Comisión</p>
+                    <p className="text-xs font-extrabold text-blue-700">{fmt(c.valor_comision)}</p>
                   </div>
                   <div className="bg-emerald-50 rounded-xl p-2 text-center">
-                    <p className="text-[10px] text-emerald-600">Técnico</p>
-                    <p className="text-xs font-bold text-emerald-700">{fmt(c.valor_tecnico)}</p>
+                    <p className="text-[10px] text-emerald-500">Técnico</p>
+                    <p className="text-xs font-extrabold text-emerald-700">{fmt(c.valor_tecnico)}</p>
                   </div>
                 </div>
+
+                {/* Acciones */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {c.pagado_tecnico && (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">✓ Técnico pagado</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">✓ Técnico liquidado</span>
                   )}
                   {c.estado === 'pagado' && !c.pagado_tecnico && (
                     <button onClick={() => onMarcarPagado(c.id)}
-                      className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg font-semibold transition-all">
-                      Marcar técnico pagado
+                      className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold transition-all active:scale-95 shadow-sm">
+                      ✓ Liquidar técnico ({fmt(c.valor_tecnico)})
                     </button>
                   )}
                   {c.bold_link && (
-                    <a href={c.bold_link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">Ver link →</a>
+                    <a href={c.bold_link} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-blue-500 hover:underline font-semibold">Ver link →</a>
                   )}
                 </div>
-                {c.referencia && <p className="text-[10px] text-gray-300 mt-1 font-mono">{c.referencia}</p>}
+
+                {c.referencia && <p className="text-[10px] text-gray-300 mt-2 font-mono">{c.referencia}</p>}
               </div>
             )
           })}
@@ -309,10 +406,12 @@ function CobrosView({ cobros, onMarcarPagado }) {
     </div>
   )
 }
-
-// ─── Dashboard ────────────────────────────────────────────────────────────────
-function DashboardView({ solicitudes, tecnicos, clientes, setView }) {
+b// ─── Dashboard ─────────────────────────────────────────────────────────────────
+function DashboardView({ solicitudes, tecnicos, clientes, cobros, setView, onRefresh }) {
   const hoy = new Date().toDateString()
+  const fmt = (v) => '$' + Number(v || 0).toLocaleString('es-CO')
+
+  // KPIs de solicitudes
   const kpis = [
     { icon: '📅', label: 'Hoy',        value: solicitudes.filter(s => new Date(s.created_at).toDateString() === hoy).length, color: 'text-blue-600'   },
     { icon: '📋', label: 'Total',      value: solicitudes.length,                                                             color: 'text-purple-600' },
@@ -320,12 +419,37 @@ function DashboardView({ solicitudes, tecnicos, clientes, setView }) {
     { icon: '✅', label: 'Verificados',value: tecnicos.filter(t => t.verificado).length,                                     color: 'text-emerald-600'},
     { icon: '🧑‍💼', label: 'Clientes',  value: clientes.filter(c => c.hasCuenta).length,                              color: 'text-sky-600'   },
   ]
+
+  // KPIs financieros
+  const pagados = (cobros || []).filter(c => c.estado === 'pagado')
+  const totalComision = pagados.reduce((s, c) => s + (c.valor_comision || 0), 0)
+  const totalCobrado  = pagados.reduce((s, c) => s + (c.valor_total    || 0), 0)
+  const pendLiquidar  = pagados.filter(c => !c.pagado_tecnico).length
+
+  const financKpis = [
+    { icon: '💰', label: 'Ingresos totales',   value: fmt(totalCobrado),  color: 'text-emerald-600' },
+    { icon: '🏦', label: 'Comisión ServiYa',   value: fmt(totalComision), color: 'text-blue-600'    },
+    { icon: '⏳', label: 'Por liquidar',       value: pendLiquidar,       color: pendLiquidar > 0 ? 'text-amber-600' : 'text-gray-400' },
+    { icon: '📃', label: 'Cobros emitidos',    value: (cobros || []).length, color: 'text-purple-600' },
+  ]
+
   return (
     <div className="p-4 md:p-6 w-full max-w-5xl mx-auto">
-      <div className="mb-4">
-        <h2 className="text-lg md:text-xl font-extrabold text-gray-900">Centro de operaciones</h2>
-        <p className="text-sm text-gray-400 mt-0.5">Resumen de clientes, solicitudes y técnicos</p>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg md:text-xl font-extrabold text-gray-900">Centro de operaciones</h2>
+          <p className="text-sm text-gray-400 mt-0.5">Resumen de clientes, solicitudes y finanzas</p>
+        </div>
+        <button onClick={onRefresh} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-emerald-600 transition-colors border border-gray-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Actualizar
+        </button>
       </div>
+
+      {/* Solicitudes KPIs */}
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Solicitudes</p>
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-5">
         {kpis.map(k => (
           <div key={k.label} className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm text-center">
@@ -335,6 +459,22 @@ function DashboardView({ solicitudes, tecnicos, clientes, setView }) {
           </div>
         ))}
       </div>
+
+      {/* Finanzas KPIs */}
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Finanzas</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {financKpis.map(k => (
+          <div key={k.label} className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-base">{k.icon}</span>
+              <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide leading-tight">{k.label}</span>
+            </div>
+            <div className={`text-base font-extrabold ${k.color}`}>{k.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tablas recientes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
@@ -377,25 +517,26 @@ function DashboardView({ solicitudes, tecnicos, clientes, setView }) {
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
-            <h3 className="font-bold text-gray-800 text-sm">Técnicos recientes</h3>
-            <button onClick={() => setView('tecnicos')} className="text-xs text-emerald-600 font-semibold">Ver →</button>
+            <h3 className="font-bold text-gray-800 text-sm">Cobros recientes</h3>
+            <button onClick={() => setView('cobros')} className="text-xs text-emerald-600 font-semibold">Ver →</button>
           </div>
           <div className="divide-y divide-gray-50">
-            {tecnicos.slice(0, 5).map(t => (
-              <div key={t.id} className="flex items-center gap-2.5 px-4 py-2.5">
-                <div className="w-7 h-7 rounded-full bg-emerald-50 overflow-hidden flex items-center justify-center text-emerald-700 font-bold text-xs flex-shrink-0">
-                  {t.foto_perfil_url ? <img src={t.foto_perfil_url} alt={t.nombre} className="w-full h-full object-cover" /> : t.nombre.charAt(0)}
-                </div>
+            {(cobros || []).slice(0, 5).map(c => (
+              <div key={c.id} className="flex items-center gap-2.5 px-4 py-2.5">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{t.nombre}</p>
-                  <p className="text-xs text-gray-400 truncate">{t.categoria} · {t.ciudad}</p>
+                  <p className="text-sm font-semibold text-gray-800 truncate">{c.tecnico_nombre}</p>
+                  <p className="text-xs text-gray-400 truncate">→ {c.cliente_nombre}</p>
                 </div>
-                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full border flex-shrink-0 ${t.verificado ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                  {t.verificado ? '✓' : '⏳'}
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${
+                  c.estado === 'pagado' ? 'bg-green-50 text-green-700 border-green-200'
+                  : c.estado === 'fallido' ? 'bg-red-50 text-red-600 border-red-200'
+                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                }`}>
+                  {'$' + Number(c.valor_total || 0).toLocaleString('es-CO')}
                 </span>
               </div>
             ))}
-            {tecnicos.length === 0 && <p className="text-xs text-gray-400 text-center py-6">Sin técnicos aún</p>}
+            {(cobros || []).length === 0 && <p className="text-xs text-gray-400 text-center py-6">Sin cobros aún</p>}
           </div>
         </div>
       </div>
@@ -404,6 +545,7 @@ function DashboardView({ solicitudes, tecnicos, clientes, setView }) {
 }
 
 // ─── Solicitudes ──────────────────────────────────────────────────────────────────
+
 function SolicitudesView({ solicitudes, tecnicos, onUpdateEstado, onAsignarTecnico }) {
   const [search, setSearch]   = useState('')
   const [filE, setFilE]       = useState('')
@@ -988,27 +1130,34 @@ export default function AdminPage() {
   }, [])
 
   // Fetch data
-  useEffect(() => {
+  const refreshData = async () => {
     if (!user) return
-    setDL(true)
-    Promise.all([
+    const [{ data: s }, { data: t }, { data: pagos }, { data: c }, { data: co }] = await Promise.all([
       supabase.from('solicitudes').select('*').order('created_at', { ascending: false }),
       supabase.from('tecnicos').select('*').order('created_at', { ascending: false }),
       supabase.from('tecnico_pagos').select('*'),
       supabase.from('clientes').select('*').order('updated_at', { ascending: false }),
       supabase.from('cobros').select('*').order('created_at', { ascending: false }),
-    ]).then(([{ data: s }, { data: t }, { data: pagos }, { data: c }, { data: co }]) => {
-      setS(s || [])
-      setT(t || [])
-      const byTecnico = (pagos || []).reduce((acc, p) => {
-        acc[p.tecnico_id] = p
-        return acc
-      }, {})
-      setPagosByTecnico(byTecnico)
-      setC(c || [])
-      setCobros(co || [])
-      setDL(false)
-    })
+    ])
+    setS(s || [])
+    setT(t || [])
+    const byTecnico = (pagos || []).reduce((acc, p) => { acc[p.tecnico_id] = p; return acc }, {})
+    setPagosByTecnico(byTecnico)
+    setC(c || [])
+    setCobros(co || [])
+  }
+
+  useEffect(() => {
+    if (!user) return
+    setDL(true)
+    refreshData().finally(() => setDL(false))
+
+    // Auto-refresh cada 60 segundos
+    const interval = setInterval(() => {
+      refreshData()
+    }, 60000)
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   // Actions
@@ -1100,7 +1249,7 @@ export default function AdminPage() {
             <span className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin block" />
           </div>
         ) : view === 'dashboard' ? (
-          <DashboardView solicitudes={solicitudes} tecnicos={tecnicos} clientes={clientes} setView={setView} />
+          <DashboardView solicitudes={solicitudes} tecnicos={tecnicos} clientes={clientes} cobros={cobros} setView={setView} onRefresh={refreshData} />
         ) : view === 'solicitudes' ? (
           <SolicitudesView solicitudes={solicitudes} tecnicos={tecnicos} onUpdateEstado={updateEstado} onAsignarTecnico={asignarTecnico} />
         ) : view === 'clientes' ? (
