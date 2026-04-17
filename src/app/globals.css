@@ -154,3 +154,30 @@ button, a, [role="button"] {
 .min-h-screen {
   min-height: 100dvh;
 }
+
+/* ─── Fix browser autofill background override ───────────────────────────────
+   Chrome/Safari autofill overrides background-color, making white text
+   invisible on white. The 9999s transition keeps the original background.
+   -webkit-text-fill-color: inherit uses whatever color the element has set.
+   This works for BOTH dark (text-white) and light (text-gray-900) inputs.
+── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: inherit !important;
+  transition:
+    background-color 9999s ease-in-out 0s,
+    color            9999s ease-in-out 0s !important;
+}
+
+/* ─── Ensure inputs always show their text color ─── */
+input, textarea, select {
+  color: inherit;
+}
