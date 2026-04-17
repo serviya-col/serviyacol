@@ -3,6 +3,8 @@ import './globals.css'
 import WhatsAppButton from '@/components/WhatsAppButton'
 import { Suspense } from 'react'
 import MetaPixel from '@/components/MetaPixel'
+import Script from 'next/script'
+
 
 const inter = Inter({
   subsets: ['latin'],
@@ -219,12 +221,29 @@ export default function RootLayout({ children }) {
         <link rel="dns-prefetch" href="https://checkout.bold.co" />
       </head>
       <body className={`${inter.className} bg-white text-gray-900 antialiased overflow-x-hidden w-full`}>
+        {/* Google Analytics 4 */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-QHDZC21468"
+          strategy="afterInteractive"
+        />
+        <Script id="ga4-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-QHDZC21468', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
+
         <Suspense fallback={null}>
           <MetaPixel />
         </Suspense>
         {children}
         <WhatsAppButton />
       </body>
+
     </html>
   )
 }
