@@ -1,6 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import Logo from '@/components/Logo'
+
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
@@ -30,10 +32,10 @@ export default function Navbar() {
       >
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="text-2xl font-bold tracking-tight flex-shrink-0">
-            <span className="text-brand">Servi</span>
-            <span className="text-gray-900">Ya</span>
+          <Link href="/" className="flex-shrink-0 flex items-center" aria-label="ServiYa — inicio">
+            <Logo />
           </Link>
+
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-7">

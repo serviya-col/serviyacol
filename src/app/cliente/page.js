@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import PanelFooter from '@/components/PanelFooter'
+import Logo from '@/components/Logo'
+
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
@@ -74,10 +76,11 @@ function AuthScreen({ onSuccess, forcedError = '' }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#071A14] to-[#0A3D2E] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <span className="text-4xl font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya</span>
-          <p className="text-white/40 text-sm mt-1 uppercase tracking-widest font-semibold">Panel de Cliente</p>
+        <div className="text-center mb-8 flex flex-col items-center">
+          <Logo variant="white" />
+          <p className="text-white/40 text-sm mt-2 uppercase tracking-widest font-semibold">Panel de Cliente</p>
         </div>
+
         <div className="bg-white/8 backdrop-blur-md border border-white/12 rounded-3xl p-7">
           <div className="bg-white/5 rounded-xl p-1 mb-5 grid grid-cols-2 gap-1">
             <button
@@ -156,10 +159,11 @@ function Sidebar({ view, setView, user, onLogout, totalSolicitudes }) {
     <>
       {/* ── Desktop sidebar ───────────────────────────────────────────── */}
       <aside className="hidden md:flex w-56 bg-[#0A1A14] flex-col min-h-screen sticky top-0 flex-shrink-0 border-r border-white/5">
-        <div className="px-5 py-5 border-b border-white/8">
-          <span className="text-xl font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya</span>
-          <span className="text-white/25 text-xs ml-2">Cliente</span>
+        <div className="px-5 py-5 border-b border-white/8 flex items-center gap-2">
+          <Logo variant="white" />
+          <span className="text-white/25 text-xs">Cliente</span>
         </div>
+
         <div className="px-5 py-4 border-b border-white/8">
           <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-emerald-400 font-extrabold text-lg mb-2">
             {user?.email?.charAt(0)?.toUpperCase() || '?'}
@@ -191,7 +195,8 @@ function Sidebar({ view, setView, user, onLogout, totalSolicitudes }) {
 
       {/* ── Mobile: sticky top header ────────────────────────────────────── */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0A1A14]/95 backdrop-blur-md border-b border-white/8 flex items-center justify-between px-4 py-3">
-        <span className="text-lg font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya <span className="text-white/30 text-xs font-normal">Cliente</span></span>
+        <Logo variant="white" />
+
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-emerald-600/20 flex items-center justify-center text-emerald-400 font-bold text-sm">
             {user?.email?.charAt(0)?.toUpperCase() || '?'}

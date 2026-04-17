@@ -1,4 +1,7 @@
+import Logo from '@/components/Logo'
+
 // Componente footer compartido para todos los paneles
+
 export default function PanelFooter({ role = 'panel' }) {
   const year = new Date().getFullYear()
   return (
@@ -8,11 +11,10 @@ export default function PanelFooter({ role = 'panel' }) {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <span className="text-lg font-extrabold text-gray-900">
-                <span className="text-emerald-600">Servi</span>Ya
-              </span>
-              <p className="text-xs text-gray-400 mt-0.5">Técnicos verificados a domicilio en Colombia</p>
+              <Logo />
+              <p className="text-xs text-gray-400 mt-1">Técnicos verificados a domicilio en Colombia</p>
             </div>
+
             {/* Links de contacto — wrap on mobile */}
             <div className="flex flex-wrap gap-x-4 gap-y-3">
               <a
