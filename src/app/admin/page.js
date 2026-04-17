@@ -220,6 +220,8 @@ function CobrosView({ cobros, onMarcarPagado, onMarcarEstadoCobro }) {
   const fmt = (v) => '$' + Number(v || 0).toLocaleString('es-CO')
   const [filtroEstado, setFiltroEstado] = useState('')
   const [lastRefresh] = useState(new Date())
+  const [confirmPago, setConfirmPago] = useState(null)
+  const [loadingId, setLoadingId] = useState(null)
 
   const ESTADO_COBRO = {
     pendiente:   { label: 'Pendiente',    cls: 'bg-amber-50  text-amber-700  border-amber-200',  dot: 'bg-amber-400'  },
