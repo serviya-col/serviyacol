@@ -236,6 +236,27 @@ export async function notifyCobroCreado({ cobro }) {
   ])
 }
 
+/** Admin notificado cuando técnico crea un cobro */
+export async function notifyAdminCobroCreado({ cobro }) {
+  await Promise.all([
+    sendEmail({
+      to: process.env.NEXT_PUBLIC_ADMIN_EMAIL,
+      subject: `💳 Nuevo cobro creado — ${cobro.tecnico_nombre} → ${cobro.cliente_nombre} — $${cobro.valor_total?.toLocaleString('es-CO')} COP`,
+      html: tplAdminCobroCreado(cobro),
+    }),
+    sendWhatsApp({
+      phone: process.env.ADMIN_WHATSAPP,
+      templateName: process.env.WHATSAPP_TPL_ADMIN_COBRO || 'serviya_admin_cobro_creado',
+      bodyParams: [
+        cobro.tecnico_nombre || '—',
+        cobro.cliente_nombre || '—',
+        `$${cobro.valor_total?.toLocaleString('es-CO')} COP`,
+        cobro.referencia || '—',
+      ],
+    }),
+  ])
+}
+
 /** Pago confirmado por Bold webhook (SALE_APPROVED) */
 export async function notifyPagoConfirmado({ cobro }) {
   await Promise.all([
@@ -706,6 +727,30 @@ function tplAdminPagoConfirmado(cobro) {
         ['Para el técnico', `$${cobro.valor_tecnico?.toLocaleString('es-CO')} COP`],
       ])}
       ${ctaBtn('Ver en el panel de admin →', `${SITE_URL}/admin`, '#7c3aed')}
+    `
+  })
+}
+
+function tplAdminCobroCreado(cobro) {
+  return shell({
+    headerEmoji: '💳',
+    headerTitle: 'Nuevo cobro generado',
+    headerSubtitle: `Técnico: ${cobro.tecnico_nombre || '—'} → Cliente: ${cobro.cliente_nombre || '—'}`,
+    body: `
+      <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        Un técnico acaba de generar un link de pago. Aquí está el resumen del cobro:
+      </p>
+      ${infoTable([
+        ['Técnico', cobro.tecnico_nombre || '—'],
+        ['Cliente', cobro.cliente_nombre || '—'],
+        ['Servicio', cobro.descripcion || '—'],
+        ['Referencia', cobro.referencia || '—'],
+        ['Total a cobrar', `$${cobro.valor_total?.toLocaleString('es-CO')} COP`],
+        ['Comisión ServiYa (15%)', `$${cobro.valor_comision?.toLocaleString('es-CO')} COP`],
+        ['Para el técnico', `$${cobro.valor_tecnico?.toLocaleString('es-CO')} COP`],
+      ])}
+      ${cobro.bold_link ? highlight(`🔗 <strong>Link de pago generado:</strong> <a href="${cobro.bold_link}" style="color:#059669;word-break:break-all;">${cobro.bold_link}</a>`) : ''}
+      ${ctaBtn('Ver cobros en el panel →', `${SITE_URL}/admin`, '#7c3aed')}
     `
   })
 }
