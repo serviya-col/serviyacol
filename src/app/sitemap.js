@@ -1,32 +1,9 @@
-const BASE = 'https://www.serviyacol.com'
-
-// Servicios que queremos indexar
-const SERVICIOS = [
-  'Plomería',
-  'Electricidad',
-  'Cerrajería',
-  'Pintura',
-  'Aire acondicionado',
-  'Jardinería',
-  'Limpieza',
-]
-
-// Ciudades principales
-const CIUDADES = [
-  'Bogotá',
-  'Medellín',
-  'Cali',
-  'Barranquilla',
-  'Cartagena',
-  'Bucaramanga',
-  'Pereira',
-  'Manizales',
-]
-
 export default function sitemap() {
+  const BASE = 'https://www.serviyacol.com'
   const now = new Date()
 
-  const staticPages = [
+  return [
+    // ── Páginas principales ────────────────────────────────────────────
     {
       url: BASE,
       lastModified: now,
@@ -49,45 +26,25 @@ export default function sitemap() {
       url: `${BASE}/tecnico`,
       lastModified: now,
       changeFrequency: 'monthly',
-      priority: 0.6,
+      priority: 0.5,
     },
     {
       url: `${BASE}/cliente`,
       lastModified: now,
       changeFrequency: 'monthly',
-      priority: 0.5,
+      priority: 0.4,
     },
     {
       url: `${BASE}/terminos`,
       lastModified: now,
       changeFrequency: 'yearly',
-      priority: 0.3,
+      priority: 0.2,
     },
     {
       url: `${BASE}/privacidad`,
       lastModified: now,
       changeFrequency: 'yearly',
-      priority: 0.3,
+      priority: 0.2,
     },
   ]
-
-  // Páginas de solicitar por servicio (long-tail SEO)
-  const servicioPages = SERVICIOS.map((servicio) => ({
-    url: `${BASE}/solicitar?categoria=${encodeURIComponent(servicio)}`,
-    lastModified: now,
-    changeFrequency: 'weekly',
-    priority: 0.85,
-  }))
-
-  // Opcional: combinaciones servicio + ciudad (muy potente para SEO local)
-  const localPages = CIUDADES.flatMap((ciudad) =>
-    SERVICIOS.slice(0, 4).map((servicio) => ({
-      url: `${BASE}/solicitar?categoria=${encodeURIComponent(servicio)}&ciudad=${encodeURIComponent(ciudad)}`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.75,
-    }))
-  )
-
-  return [...staticPages, ...servicioPages, ...localPages]
 }
