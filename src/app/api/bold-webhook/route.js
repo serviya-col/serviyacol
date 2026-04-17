@@ -12,25 +12,32 @@ export async function POST(req) {
     const receivedSignature = req.headers.get('x-bold-signature') || ''
     const secretKey = process.env.BOLD_WEBHOOK_SECRET || ''
 
-    // Bold: codificar body en Base64, luego HMAC-SHA256 en hex
-    const encodedBody = Buffer.from(rawBody, 'utf-8').toString('base64')
-    const calculatedHmac = crypto
-      .createHmac('sha256', secretKey)
-      .update(encodedBody)
-      .digest('hex')
+    // Bold: firma = Base64( HMAC-SHA256( Base64(rawBody), secretKey ) )
+    let firmaValida = true
+    if (secretKey && secretKey !== 'REEMPLAZAR_CON_TU_WEBHOOK_SECRET_BOLD') {
+      try {
+        const encodedBody = Buffer.from(rawBody, 'utf-8').toString('base64')
+        const hmacBuffer = crypto
+          .createHmac('sha256', secretKey)
+          .update(encodedBody)
+          .digest() // raw bytes
+        const calculatedBase64 = hmacBuffer.toString('base64')
 
-    // En modo pruebas, secretKey es string vacío, por eso dejamos pasar si está vacío
-    const firmaValida =
-      !secretKey ||
-      secretKey === 'REEMPLAZAR_CON_TU_WEBHOOK_SECRET_BOLD' ||
-      (receivedSignature.length === calculatedHmac.length &&
-        crypto.timingSafeEqual(
-          Buffer.from(calculatedHmac, 'hex'),
-          Buffer.from(receivedSignature, 'hex')
-        ))
+        // Comparar en Base64 (longitudes siempre iguales → timingSafeEqual seguro)
+        if (receivedSignature.length > 0) {
+          const receivedBuf   = Buffer.from(receivedSignature, 'base64')
+          const calculatedBuf = Buffer.from(calculatedBase64,  'base64')
+          firmaValida = receivedBuf.length === calculatedBuf.length &&
+            crypto.timingSafeEqual(receivedBuf, calculatedBuf)
+        }
+        // Si Bold no envía firma (raro), dejamos pasar
+      } catch {
+        firmaValida = false
+      }
+    }
 
     if (!firmaValida) {
-      console.warn('Bold webhook: firma inválida')
+      console.warn('Bold webhook: firma inválida. Received:', receivedSignature?.substring(0, 20))
       return NextResponse.json({ error: 'Firma inválida' }, { status: 400 })
     }
 
