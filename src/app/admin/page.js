@@ -216,7 +216,7 @@ function MobileBottomNav({ view, setView, pendientes, sinVerificar, cobrosCount 
 }
 
 // ─── CobrosView ────────────────────────────────────────────────────────────────
-function CobrosView({ cobros, onMarcarPagado }) {
+function CobrosView({ cobros, onMarcarPagado, onMarcarEstadoCobro }) {
   const fmt = (v) => '$' + Number(v || 0).toLocaleString('es-CO')
   const [filtroEstado, setFiltroEstado] = useState('')
   const [lastRefresh] = useState(new Date())
@@ -332,7 +332,64 @@ function CobrosView({ cobros, onMarcarPagado }) {
           <p className="font-semibold">No hay cobros con este filtro</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <>
+          {/* Modal confirmación pago manual */}
+          {confirmPago && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setConfirmPago(null)}>
+              <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+                <div className="text-center mb-4">
+                  <div className="text-4xl mb-2">💳</div>
+                  <h3 className="text-lg font-extrabold text-gray-900">Confirmar pago manual</h3>
+                  <p className="text-sm text-gray-500 mt-1">Marca este cobro como pagado porque Bold no lo actualizó automáticamente</p>
+                </div>
+                <div className="bg-gray-50 rounded-2xl p-4 mb-4 space-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Cliente</span>
+                    <span className="font-bold text-gray-800">{confirmPago.cliente_nombre}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Técnico</span>
+                    <span className="font-bold text-gray-800">{confirmPago.tecnico_nombre}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Valor</span>
+                    <span className="font-bold text-emerald-700">{fmt(confirmPago.valor_total)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Comisión</span>
+                    <span className="font-bold text-blue-700">{fmt(confirmPago.valor_comision)}</span>
+                  </div>
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5">
+                  <p className="text-xs text-amber-700 font-semibold">⚠️ Solo usa esto si verificaste el pago en tu panel de Bold o en el banco. Esta acción no puede deshacerse.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setConfirmPago(null)}
+                    className="py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50">
+                    Cancelar
+                  </button>
+                  <button
+                    disabled={loadingId === confirmPago.id}
+                    onClick={async () => {
+                      setLoadingId(confirmPago.id)
+                      await onMarcarEstadoCobro(confirmPago.id, 'pagado')
+                      setLoadingId(null)
+                      setConfirmPago(null)
+                    }}
+                    className="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-all active:scale-95 disabled:opacity-60">
+                    {loadingId === confirmPago.id ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Guardando...
+                      </span>
+                    ) : '✓ Confirmar pago'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
           {filtered.map(c => {
             const cfg = ESTADO_COBRO[c.estado] || { label: c.estado, cls: 'bg-gray-50 text-gray-600 border-gray-200', dot: 'bg-gray-400' }
             const minsDesde = Math.floor((Date.now() - new Date(c.created_at)) / 60000)
@@ -385,10 +442,26 @@ function CobrosView({ cobros, onMarcarPagado }) {
                   {c.pagado_tecnico && (
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">✓ Técnico liquidado</span>
                   )}
+                  {/* Pago manual por admin cuando Bold no dispara el webhook */}
+                  {c.estado === 'pendiente' && (
+                    <button onClick={() => setConfirmPago(c)}
+                      className="text-xs bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg font-bold transition-all active:scale-95 shadow-sm">
+                      💳 Marcar como pagado
+                    </button>
+                  )}
                   {c.estado === 'pagado' && !c.pagado_tecnico && (
                     <button onClick={() => onMarcarPagado(c.id)}
                       className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold transition-all active:scale-95 shadow-sm">
                       ✓ Liquidar técnico ({fmt(c.valor_tecnico)})
+                    </button>
+                  )}
+                  {c.estado === 'pendiente' && (
+                    <button onClick={async () => {
+                      if (!confirm('¿Marcar este cobro como FALLIDO?')) return
+                      await onMarcarEstadoCobro(c.id, 'fallido')
+                    }}
+                      className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg font-semibold transition-all">
+                      Fallido
                     </button>
                   )}
                   {c.bold_link && (
@@ -401,7 +474,8 @@ function CobrosView({ cobros, onMarcarPagado }) {
               </div>
             )
           })}
-        </div>
+          </div>
+        </>
       )}
     </div>
   )
@@ -1212,6 +1286,13 @@ export default function AdminPage() {
       }).catch(() => {})
     }
   }
+  // Actualizar estado del cobro manualmente (cuando Bold no dispara el webhook)
+  const marcarEstadoCobro = async (id, nuevoEstado) => {
+    const updateData = { estado: nuevoEstado }
+    if (nuevoEstado === 'pagado') updateData.fecha_pago = new Date().toISOString()
+    await supabase.from('cobros').update(updateData).eq('id', id)
+    setCobros(prev => prev.map(c => c.id === id ? { ...c, ...updateData } : c))
+  }
   const logout = async () => { await supabase.auth.signOut(); setUser(null) }
 
   if (authLoading) return (
@@ -1255,7 +1336,7 @@ export default function AdminPage() {
         ) : view === 'clientes' ? (
           <ClientesView clientes={clientes} />
         ) : view === 'cobros' ? (
-          <CobrosView cobros={cobros} onMarcarPagado={marcarTecnicoPagado} />
+          <CobrosView cobros={cobros} onMarcarPagado={marcarTecnicoPagado} onMarcarEstadoCobro={marcarEstadoCobro} />
         ) : (
           <TecnicosView tecnicos={tecnicos} pagosByTecnico={pagosByTecnico} onVerificar={verificarTecnico} onActivar={activarTecnico} />
         )}
