@@ -420,7 +420,17 @@ export default function Home() {
 
           <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-center">
             <p>© 2026 ServiYa by Renting Amc Agency · Todos los derechos reservados</p>
-            <p>Hecho con ❤️ en Colombia 🇨🇴</p>
+            <p>
+              Hecho con ❤️ por{' '}
+              <a 
+                href="https://www.amcagencyweb.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-white hover:text-emerald-400 font-semibold transition-colors underline decoration-white/20 hover:decoration-emerald-400/50 underline-offset-4"
+              >
+                Renting Amc Agency
+              </a>
+            </p>
           </div>
         </div>
       </footer>
