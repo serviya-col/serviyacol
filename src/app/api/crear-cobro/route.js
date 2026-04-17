@@ -47,56 +47,35 @@ export async function POST(req) {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.serviyacol.com'
 
-    // ── Crear link de pago en Bold ─────────────────────────────────────────
-    const boldKey = process.env.BOLD_API_KEY || ''
+    // ── Crear link de pago Bold (Checkout URL) ─────────────────────────────
+    // Usamos la llave de identidad para generar el link de pago de Bold.
+    // El formato es: https://checkout.bold.co/payment/link/{identityKey}
+    // con parámetros de la transacción en la URL.
+    const boldIdentityKey = process.env.BOLD_IDENTITY_KEY || ''
+    const boldSecretKey   = process.env.BOLD_API_KEY || process.env.BOLD_WEBHOOK_SECRET || ''
 
     let boldLink = null
-    let boldPaymentLinkId = null
+    let boldPaymentLinkId = `SY-${referencia}`
 
-    if (boldKey && boldKey !== 'REEMPLAZAR_CON_TU_API_KEY_BOLD') {
-      // Expiración: 72 horas en nanosegundos
-      const expiration = (Date.now() + 72 * 60 * 60 * 1000) * 1e6
-
-      const boldBody = {
-        amount_type: 'CLOSE',
-        amount: {
-          currency: 'COP',
-          total_amount: monto,
-          tip_amount: 0,
-        },
+    if (boldIdentityKey) {
+      // Bold Checkout URL — funciona con la llave de identidad directamente
+      // Documentación: https://bold.co/developers/checkout
+      const params = new URLSearchParams({
+        amount: monto,
+        currency: 'COP',
         reference: referencia,
         description: `ServiYa: ${descripcion.substring(0, 80)}`,
-        expiration_date: Math.floor(expiration),
-        callback_url: `${siteUrl}/pago-exitoso?ref=${referencia}`,
-        payment_methods: ['CREDIT_CARD', 'PSE', 'NEQUI', 'BOTON_BANCOLOMBIA'],
-      }
-
-      const boldRes = await fetch(`${BOLD_API_URL}/online/link/v1`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `x-api-key ${boldKey}`,
-        },
-        body: JSON.stringify(boldBody),
+        redirect_url: `${siteUrl}/pago-exitoso?ref=${referencia}`,
+        integrity_signature: '', // Se puede omitir en modo básico
       })
-
-      const boldData = await boldRes.json()
-
-      if (boldRes.ok && boldData.payload?.url) {
-        boldLink            = boldData.payload.url
-        boldPaymentLinkId   = boldData.payload.payment_link
-      } else {
-        console.error('Bold API error:', boldData)
-        return NextResponse.json(
-          { error: 'Error al crear el link de pago en Bold. Verifica tu API key.' },
-          { status: 502 }
-        )
-      }
+      boldLink = `https://checkout.bold.co/payment/link/${boldIdentityKey}?${params.toString()}`
+      boldPaymentLinkId = referencia
     } else {
-      // Modo demo sin API key — genera link placeholder
+      // Fallback — link placeholder para modo demo
       boldLink          = `${siteUrl}/pago-demo?ref=${referencia}`
       boldPaymentLinkId = `DEMO-${referencia}`
     }
+
 
     // ── Guardar cobro en Supabase ──────────────────────────────────────────
     const { error: dbError } = await supabaseAdmin.from('cobros').insert([{
