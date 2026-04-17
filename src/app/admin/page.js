@@ -406,7 +406,7 @@ function CobrosView({ cobros, onMarcarPagado }) {
     </div>
   )
 }
-b// ─── Dashboard ─────────────────────────────────────────────────────────────────
+// ─── Dashboard ─────────────────────────────────────────────────────────────────
 function DashboardView({ solicitudes, tecnicos, clientes, cobros, setView, onRefresh }) {
   const hoy = new Date().toDateString()
   const fmt = (v) => '$' + Number(v || 0).toLocaleString('es-CO')
