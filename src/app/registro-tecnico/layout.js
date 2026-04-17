@@ -1,7 +1,7 @@
 export const metadata = {
   title: 'Regístrate como técnico — Genera más ingresos con ServiYa',
   description:
-    'Únete a +8.400 técnicos verificados en Colombia. Recibe clientes en tu ciudad, fija tu tarifa y cobra de forma segura. Registro 100% gratuito. Sin cuota mensual.',
+    'Regístrate como técnico verificado en ServiYa. Recibe clientes en tu ciudad, fija tu tarifa y cobra de forma segura con Bold. Registro 100% gratuito. Sin cuota mensual.',
   keywords: [
     'registrarse como técnico Colombia',
     'trabajo técnico a domicilio',

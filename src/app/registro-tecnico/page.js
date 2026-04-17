@@ -209,8 +209,8 @@ export default function RegistroTecnico() {
             Para técnicos y profesionales
           </span>
           <h1 className="text-3xl md:text-5xl font-extrabold leading-tight mb-4">
-            Únete a +8.400 técnicos<br />
-            <span className="text-emerald-300">que ya generan más ingresos</span>
+            Sé parte de los primeros técnicos<br />
+            <span className="text-emerald-300">en generar más ingresos con ServiYa</span>
           </h1>
           <p className="text-white/60 text-lg max-w-xl mx-auto mb-10">
             Crea tu cuenta gratis. Sin cuota mensual. Sin comisión hasta que cierres tu primer servicio.

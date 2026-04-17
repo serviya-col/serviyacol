@@ -96,7 +96,7 @@ export default function Home() {
         <div className="relative max-w-4xl mx-auto px-4 py-16 md:py-24 text-center flex-1 flex flex-col justify-center">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-emerald-200 text-xs font-semibold px-4 py-2 rounded-full mb-6 animate-fade-in mx-auto">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
-            Atención en Bogotá, Medellín, Cali y 9 ciudades más
+            Atención en Bogotá, Medellín, Cali y más ciudades
           </div>
 
           <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.08] mb-5 animate-slide-up">
@@ -113,13 +113,11 @@ export default function Home() {
           <HeroSearch />
 
           <div className="flex flex-wrap items-center justify-center gap-5 mt-8 text-sm text-white/70 animate-fade-in delay-500">
-            <span className="flex items-center gap-1.5">
-              ⭐ <span className="text-white/90 font-semibold">4.8/5</span> en reseñas reales
-            </span>
+            <span className="flex items-center gap-1.5">⭐ <span className="text-white/90 font-semibold">4.9/5</span> en reseñas reales</span>
             <span className="text-white/20 hidden sm:block">|</span>
             <span className="flex items-center gap-1.5">🛡️ Perfiles verificados</span>
             <span className="text-white/20 hidden sm:block">|</span>
-            <span className="flex items-center gap-1.5">📍 Cobertura en 12 ciudades</span>
+            <span className="flex items-center gap-1.5">📍 Cobertura en 4 ciudades</span>
           </div>
         </div>
       </section>
@@ -128,9 +126,9 @@ export default function Home() {
       <div className="border-b border-gray-100 bg-white">
         <div className="max-w-4xl mx-auto grid grid-cols-3 divide-x divide-gray-100">
           {[
-            { n: '+8.400',  label: 'Técnicos activos'     },
-            { n: '+32.000', label: 'Servicios realizados' },
-            { n: '4.8 ★',  label: 'Calificación promedio' },
+            { n: '+47',    label: 'Técnicos activos'     },
+            { n: '+180',   label: 'Servicios realizados' },
+            { n: '4.9 ★',  label: 'Calificación promedio' },
           ].map((s) => (
             <div key={s.label} className="py-6 text-center">
               <div className="text-2xl font-extrabold text-brand">{s.n}</div>
@@ -247,10 +245,10 @@ export default function Home() {
               Opiniones reales
             </span>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white mt-2">
-              +2.300 familias ya confían en ServiYa
+              Nuestros primeros clientes ya confían en ServiYa
             </h2>
             <p className="text-white/50 mt-2 text-sm">
-              Calificación promedio 4.8 ★ en más de 32.000 servicios realizados
+              Calificación promedio 4.9 ★ · Cada reseña es real
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -274,7 +272,7 @@ export default function Home() {
                 ¿Tienes un oficio?<br />Genera más ingresos
               </h2>
               <p className="text-white/60 mb-6 text-sm leading-relaxed">
-                Únete a más de 8.400 técnicos que ya reciben clientes a través de ServiYa.
+                Únete a los primeros técnicos que reciben clientes a través de ServiYa.
                 Gratis para registrarse. Sin cuota mensual.
               </p>
               <ul className="space-y-2.5 mb-8">
