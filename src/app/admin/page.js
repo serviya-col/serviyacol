@@ -132,7 +132,8 @@ function Sidebar({ view, setView, pendientes, sinVerificar, clientesCount, cobro
 
       {/* ── Mobile: sticky top header ─────────────────────────── */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0A1A14]/95 backdrop-blur-md border-b border-white/8 flex items-center justify-between px-4 py-3">
-        <span className="text-lg font-extrabold text-white"><span className="text-emerald-400">Servi</span>Ya <span className="text-white/30 text-xs font-normal">Admin</span></span>
+        <Logo variant="white" />
+
         <div className="flex items-center gap-3">
           {/* Notif badge total */}
           {(pendientes + sinVerificar + cobrosCount) > 0 && (

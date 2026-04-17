@@ -1,6 +1,8 @@
 'use client'
 import Link from 'next/link'
 import PrivacidadContent from '@/components/PrivacidadContent'
+import Logo from '@/components/Logo'
+
 
 export default function PrivacidadPage() {
   return (
@@ -8,9 +10,10 @@ export default function PrivacidadPage() {
       {/* Header / Nav Simple */}
       <nav className="border-b border-white/5 bg-white/5 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="text-xl font-black tracking-tighter hover:opacity-80 transition-opacity">
-            <span className="text-emerald-500">Servi</span>Ya
+          <Link href="/" className="flex items-center hover:opacity-80 transition-opacity" aria-label="ServiYa — inicio">
+            <Logo variant="white" />
           </Link>
+
           <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">
             Volver al inicio
           </Link>

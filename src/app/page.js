@@ -3,6 +3,8 @@ import Image from 'next/image'
 import Navbar from '@/components/Navbar'
 import TestimonialCard from '@/components/TestimonialCard'
 import HeroSearch from '@/components/HeroSearch'
+import Logo from '@/components/Logo'
+
 
 const CATEGORIAS = [
   { nombre: 'Plomería',           icon: '🔧', color: 'from-emerald-50 to-teal-50',   hover: 'hover:border-emerald-300', count: '1.200+', precio: 'Desde $50.000' },
@@ -357,9 +359,8 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
             {/* Brand — full width on mobile */}
             <div className="col-span-2 md:col-span-1">
-              <span className="text-2xl font-extrabold text-white">
-                <span className="text-brand-light">Servi</span>Ya
-              </span>
+              <Logo variant="white" />
+
               <p className="text-xs leading-relaxed mt-3 max-w-[220px] text-white/50">
                 Conectamos hogares con técnicos verificados en toda Colombia. Renting Amc Agency · NIT 1075293497-7.
               </p>
