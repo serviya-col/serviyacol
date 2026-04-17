@@ -124,7 +124,7 @@ export const metadata = {
 
   // ── Verificación de consolas
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
+    google: '0JaHSjKd3HF6XHvErQd3OqwN72q3aRRyuQ2wqUZQA_k',
   },
 }
 
