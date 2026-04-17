@@ -19,8 +19,10 @@ const SITE_URL = 'https://www.serviyacol.com'
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
+  maximumScale: 1,
+  userScalable: false,
   themeColor: '#059669',
+  interactiveWidget: 'resizes-visual',
 }
 
 // ─── Metadata global (heredado por todas las páginas) ────────────────────────

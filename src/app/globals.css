@@ -174,3 +174,39 @@ button, a, [role="button"] {
 input, textarea, select {
   color: inherit;
 }
+
+/* ─── Prevent iOS auto-zoom on input focus ────────────────────────────────────
+   iOS Safari auto-zooms when an input has font-size < 16px.
+   font-size: max(16px, 1em) ensures minimum 16px while keeping larger sizes.
+   touch-action: manipulation prevents the 300ms delay and double-tap zoom.
+── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+input[type="search"],
+input[type="url"],
+input[type="date"],
+input[type="time"],
+textarea,
+select {
+  font-size: max(16px, 1em) !important;
+  touch-action: manipulation;
+}
+
+/* ─── Prevent horizontal overflow / layout breaking on mobile ─────────────────
+   Ensures no element can cause the page to scroll horizontally.
+── */
+*, *::before, *::after {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ─── Fix layout shift when on-screen keyboard opens (iOS / Android) ──────────
+   Prevents panels from resizing erratically when virtual keyboard appears.
+── */
+.panel-main, [class*="min-h-screen"] {
+  height: auto;
+  min-height: 100dvh;
+}
