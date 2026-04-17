@@ -138,11 +138,12 @@ function LoginScreen({ onSuccess }) {
 }
 
 // ─── Sidebar / Mobile Nav ──────────────────────────────────────────────────────────────────
-function Sidebar({ view, setView, tecnico, disponiblesCount, onLogout }) {
+function Sidebar({ view, setView, tecnico, disponiblesCount, cobrosCount, onLogout }) {
   const nav = [
     { id: 'dashboard',   icon: '🏠', label: 'Mi panel'       },
     { id: 'disponibles', icon: '📋', label: 'Disponibles', badge: disponiblesCount },
     { id: 'mias',        icon: '✅', label: 'Mis solicitudes' },
+    { id: 'cobros',      icon: '💳', label: 'Mis cobros', badge: cobrosCount },
     { id: 'perfil',      icon: '👤', label: 'Mi perfil'       },
   ]
   return (
@@ -227,11 +228,12 @@ function Sidebar({ view, setView, tecnico, disponiblesCount, onLogout }) {
 }
 
 /* ── Mobile bottom tab bar ───────────────────────────────────────────────── */
-function TecnicoBottomNav({ view, setView, disponiblesCount, verificado }) {
+function TecnicoBottomNav({ view, setView, disponiblesCount, cobrosCount, verificado }) {
   const tabs = [
     { id: 'dashboard',   icon: '🏠', label: 'Panel'      },
     { id: 'disponibles', icon: '📋', label: 'Disponibles', badge: disponiblesCount },
-    { id: 'mias',        icon: '✅', label: 'Mis trabajos' },
+    { id: 'mias',        icon: '✅', label: 'Trabajos' },
+    { id: 'cobros',      icon: '💳', label: 'Cobros',    badge: cobrosCount },
     { id: 'perfil',      icon: '👤', label: 'Perfil'      },
   ]
   return (
@@ -258,6 +260,202 @@ function TecnicoBottomNav({ view, setView, disponiblesCount, verificado }) {
   )
 }
 
+
+// ─── MisCobrosView ─────────────────────────────────────────────────────────────
+function MisCobrosView({ cobros, tecnico }) {
+  const fmt = (v) => '$' + Number(v || 0).toLocaleString('es-CO')
+  const [filtro, setFiltro] = useState('')
+
+  // Guard: solo técnicos verificados
+  if (!tecnico?.verificado) {
+    return (
+      <div className="p-6 max-w-lg mx-auto mt-10">
+        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-8 text-center">
+          <div className="text-5xl mb-4">🔒</div>
+          <h2 className="text-xl font-extrabold text-amber-900 mb-2">Verificación pendiente</h2>
+          <p className="text-sm text-amber-700 leading-relaxed">
+            El control de pagos y la generación de links Bold están disponibles
+            <strong> solo para técnicos verificados</strong> con todos sus documentos aprobados.
+          </p>
+          <p className="text-xs text-amber-600 mt-3 bg-amber-100 rounded-xl p-3">
+            💬 El equipo de ServiYa revisará tu perfil y te notificará por WhatsApp o email cuando estés activo.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  const pagados    = cobros.filter(c => c.estado === 'pagado')
+  const pendientes = cobros.filter(c => c.estado === 'pendiente')
+  const fallidos   = cobros.filter(c => c.estado === 'fallido')
+
+  const totalGanado    = pagados.reduce((s, c) => s + (c.valor_tecnico || 0), 0)
+  const totalPendiente = pendientes.reduce((s, c) => s + (c.valor_tecnico || 0), 0)
+  const totalRecibido  = pagados.filter(c => c.pagado_tecnico).reduce((s, c) => s + (c.valor_tecnico || 0), 0)
+  const porRecibir     = pagados.filter(c => !c.pagado_tecnico).reduce((s, c) => s + (c.valor_tecnico || 0), 0)
+
+  const ESTADO_C = {
+    pendiente:   { label: 'Pendiente de pago', cls: 'bg-amber-50 text-amber-700 border-amber-200',   dot: 'bg-amber-400',  pulse: true  },
+    pagado:      { label: 'Pago confirmado',   cls: 'bg-green-50 text-green-700 border-green-200',   dot: 'bg-green-400',  pulse: false },
+    fallido:     { label: 'Pago fallido',      cls: 'bg-red-50   text-red-700   border-red-200',     dot: 'bg-red-400',    pulse: false },
+    reembolsado: { label: 'Reembolsado',       cls: 'bg-purple-50 text-purple-700 border-purple-200',dot: 'bg-purple-400', pulse: false },
+  }
+
+  const TABS = [
+    { key: '',          label: 'Todos',      count: cobros.length    },
+    { key: 'pendiente', label: 'Pendientes', count: pendientes.length },
+    { key: 'pagado',    label: 'Pagados',    count: pagados.length   },
+    { key: 'fallido',   label: 'Fallidos',   count: fallidos.length  },
+  ]
+
+  const filtrados = filtro ? cobros.filter(c => c.estado === filtro) : cobros
+
+  return (
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <div className="mb-4">
+        <h2 className="text-xl font-extrabold text-gray-900">Mis cobros</h2>
+        <p className="text-sm text-gray-400 mt-0.5">Historial de pagos de tus servicios (ya descontada comisión 15%)</p>
+      </div>
+
+      {/* KPIs financieros */}
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="bg-emerald-600 rounded-2xl p-4 text-white">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">💰</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-100">Total ganado</span>
+          </div>
+          <div className="text-2xl font-extrabold">{fmt(totalGanado)}</div>
+          <div className="text-[10px] text-emerald-200 mt-0.5">{pagados.length} servicios cobrados</div>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-amber-200">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">⏳</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600">Pendiente</span>
+          </div>
+          <div className="text-2xl font-extrabold text-amber-600">{fmt(totalPendiente)}</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">{pendientes.length} link(s) sin pagar</div>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-blue-100">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">✅</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-blue-600">Ya recibiste</span>
+          </div>
+          <div className="text-2xl font-extrabold text-blue-600">{fmt(totalRecibido)}</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">{pagados.filter(c => c.pagado_tecnico).length} transferidos</div>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-gray-100">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">🟡</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-gray-500">Por recibir</span>
+          </div>
+          <div className="text-2xl font-extrabold text-gray-700">{fmt(porRecibir)}</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">ServiYa te transferirá pronto</div>
+        </div>
+      </div>
+
+      {/* Info comisión */}
+      <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 mb-4 flex items-start gap-3">
+        <span className="text-xl flex-shrink-0">🏦</span>
+        <div>
+          <p className="text-xs font-bold text-blue-800">Los montos ya incluyen el descuento del 15% de comisión ServiYa</p>
+          <p className="text-xs text-blue-600/80 mt-0.5">Lo que ves en "Tú recibes" es exactamente lo que te transferimos.</p>
+        </div>
+      </div>
+
+      {/* Tabs filtro */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {TABS.map(tab => (
+          <button key={tab.key} onClick={() => setFiltro(tab.key)}
+            className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${
+              filtro === tab.key
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-emerald-300'
+            }`}
+          >
+            {tab.label} <span className={`ml-1 ${filtro === tab.key ? 'text-white/70' : 'text-gray-400'}`}>({tab.count})</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Lista */}
+      {filtrados.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center">
+          <div className="text-4xl mb-3">💳</div>
+          <p className="font-semibold text-gray-500">
+            {cobros.length === 0 ? 'Aún no has generado cobros' : 'No hay cobros con este filtro'}
+          </p>
+          {cobros.length === 0 && (
+            <p className="text-xs text-gray-400 mt-2 px-6">
+              Cuando completes un servicio, usa el botón "💳 Cobrar" para generar tu link de pago Bold
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtrados.map(c => {
+            const cfg = ESTADO_C[c.estado] || { label: c.estado, cls: 'bg-gray-50 text-gray-600 border-gray-200', dot: 'bg-gray-400', pulse: false }
+            const minsDesde = Math.floor((Date.now() - new Date(c.created_at)) / 60000)
+            const tiempoLabel = minsDesde < 60 ? `hace ${minsDesde} min` : minsDesde < 1440 ? `hace ${Math.floor(minsDesde/60)}h` : `hace ${Math.floor(minsDesde/1440)}d`
+            return (
+              <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-800 text-sm">{c.cliente_nombre}</p>
+                    <p className="text-xs text-gray-400">{c.cliente_telefono}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg.cls}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${cfg.pulse ? 'animate-pulse' : ''}`} />
+                      {cfg.label}
+                    </span>
+                    <span className="text-[10px] text-gray-400">{tiempoLabel}</span>
+                  </div>
+                </div>
+                {c.descripcion && <p className="text-xs text-gray-500 mb-3 line-clamp-2 leading-relaxed">{c.descripcion}</p>}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="bg-gray-50 rounded-xl p-2.5 text-center">
+                    <p className="text-[10px] text-gray-400">Cliente pagó</p>
+                    <p className="text-sm font-extrabold text-gray-700">{fmt(c.valor_total)}</p>
+                  </div>
+                  <div className="bg-emerald-50 rounded-xl p-2.5 text-center">
+                    <p className="text-[10px] text-emerald-500">Tú recibes</p>
+                    <p className="text-sm font-extrabold text-emerald-700">{fmt(c.valor_tecnico)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {c.estado === 'pagado' && (
+                    c.pagado_tecnico
+                      ? <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">✓ Transferencia recibida</span>
+                      : <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                          Pago confirmado · ServiYa te transferirá pronto
+                        </span>
+                  )}
+                  {c.estado === 'pendiente' && c.bold_link && (
+                    <a href={c.bold_link} target="_blank" rel="noopener noreferrer"
+                      className="text-xs font-bold text-blue-600 hover:underline">🔗 Ver link de pago</a>
+                  )}
+                  {c.estado === 'fallido' && (
+                    <span className="text-[10px] font-semibold text-red-600">⚠️ El pago fue rechazado</span>
+                  )}
+                </div>
+                {c.referencia && <p className="text-[10px] text-gray-300 mt-2 font-mono truncate">{c.referencia}</p>}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* CTA nuevo cobro */}
+      <div className="mt-6">
+        <a href="/tecnico/cobrar"
+          className="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-emerald-900/20">
+          💳 Generar nuevo cobro
+        </a>
+      </div>
+    </div>
+  )
+}
 
 // ─── Dashboard Técnico ────────────────────────────────────────────────────────
 function DashboardView({ tecnico, misSolicitudes, disponiblesCount, setView }) {
@@ -827,6 +1025,7 @@ export default function TecnicoPage() {
   const [view, setView]           = useState('dashboard')
   const [disponibles, setDisp]    = useState([])
   const [misSols, setMisSols]     = useState([])
+  const [misCobros, setMisCobros] = useState([])
 
   // Auth listener
   useEffect(() => {
@@ -860,9 +1059,13 @@ export default function TecnicoPage() {
       supabase.from('solicitudes').select('*')
         .eq('tecnico_id', tecnico.id)
         .order('created_at', { ascending: false }),
-    ]).then(([{ data: d }, { data: m }]) => {
+      supabase.from('cobros').select('*')
+        .eq('tecnico_id', tecnico.id)
+        .order('created_at', { ascending: false }),
+    ]).then(([{ data: d }, { data: m }, { data: cb }]) => {
       setDisp(d || [])
       setMisSols(m || [])
+      setMisCobros(cb || [])
     })
   }, [tecnico])
 
@@ -938,12 +1141,14 @@ export default function TecnicoPage() {
   )
   if (!user || !tecnico) return <LoginScreen onSuccess={onLogin} />
 
+  const cobrosCount = misCobros.filter(c => c.estado === 'pendiente').length
+
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar view={view} setView={setView} tecnico={tecnico} disponiblesCount={disponibles.length} onLogout={logout} />
+      <Sidebar view={view} setView={setView} tecnico={tecnico} disponiblesCount={disponibles.length} cobrosCount={cobrosCount} onLogout={logout} />
       {/* Mobile bottom nav */}
-      <TecnicoBottomNav view={view} setView={setView} disponiblesCount={disponibles.length} verificado={tecnico?.verificado} />
-      {/* Floating Cobrar button — mobile only */}
+      <TecnicoBottomNav view={view} setView={setView} disponiblesCount={disponibles.length} cobrosCount={cobrosCount} verificado={tecnico?.verificado} />
+      {/* Floating Cobrar button — mobile only, solo verificados */}
       {tecnico?.verificado && (
         <Link
           href="/tecnico/cobrar"
@@ -957,6 +1162,7 @@ export default function TecnicoPage() {
         {view === 'dashboard'   && <DashboardView tecnico={tecnico} misSolicitudes={misSols} disponiblesCount={disponibles.length} setView={setView} />}
         {view === 'disponibles' && <DisponiblesView disponibles={disponibles} onAceptar={aceptar} />}
         {view === 'mias'        && <MiasSolicitudesView solicitudes={misSols} onUpdateEstado={updateEstado} />}
+        {view === 'cobros'      && <MisCobrosView cobros={misCobros} tecnico={tecnico} />}
         {view === 'perfil'      && <PerfilView tecnico={tecnico} pago={pago} onUpdatePerfil={updatePerfil} onUpdatePago={updatePago} />}
         <PanelFooter role="tecnico" />
       </main>
