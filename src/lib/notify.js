@@ -299,250 +299,413 @@ export async function notifyNuevaSolicitud({ solicitud, clienteNombre }) {
 }
 
 // ─── HTML Email Templates ──────────────────────────────────────────────────────
+// Design system: slate background, white card, emerald brand, clean info rows
 
-function shell(content) {
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ServiYa</title></head>
-<body style="margin:0;padding:0;background:#f0fdf4;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;padding:32px 16px;"><tr><td align="center">
-<table width="100%" style="max-width:540px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,.09);">
-<tr><td style="background:linear-gradient(135deg,#064e3b 0%,#059669 100%);padding:28px 32px;text-align:center;">
-  <span style="color:#fff;font-size:26px;font-weight:900;font-family:'Segoe UI',sans-serif;letter-spacing:-0.5px;"><span style="color:#6ee7b7;">Servi</span>Ya</span>
-  <p style="color:rgba(255,255,255,.65);font-size:11px;margin:5px 0 0;text-transform:uppercase;letter-spacing:2px;">Tu técnico de confianza</p>
-</td></tr>
-<tr><td style="padding:28px 32px;">${content}</td></tr>
-<tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
-  <p style="color:#9ca3af;font-size:11px;margin:0;">© ${new Date().getFullYear()} ServiYa · <a href="${SITE_URL}" style="color:#059669;text-decoration:none;">serviyacol.com</a> · <a href="mailto:soporte@serviyacol.com" style="color:#059669;text-decoration:none;">soporte@serviyacol.com</a></p>
+const YEAR = new Date().getFullYear()
+
+function shell({ headerEmoji = '', headerTitle = '', headerSubtitle = '', body = '' }) {
+  return `<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>ServiYa</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9;padding:32px 16px;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;">
+
+  <!-- HEADER -->
+  <tr><td style="background:linear-gradient(145deg,#052e16 0%,#064e3b 50%,#065f46 100%);border-radius:14px 14px 0 0;padding:32px 40px 28px;text-align:center;">
+    ${headerEmoji ? `<div style="font-size:40px;line-height:1;margin-bottom:14px;">${headerEmoji}</div>` : ''}
+    <div style="font-size:26px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;line-height:1;margin-bottom:4px;">
+      <span style="color:#6ee7b7;">Servi</span>Ya
+    </div>
+    ${headerTitle ? `<p style="color:#ffffff;font-size:17px;font-weight:700;margin:12px 0 0;line-height:1.3;">${headerTitle}</p>` : ''}
+    ${headerSubtitle ? `<p style="color:rgba(255,255,255,0.60);font-size:12px;margin:6px 0 0;line-height:1.5;font-weight:500;">${headerSubtitle}</p>` : ''}
+  </td></tr>
+
+  <!-- BODY -->
+  <tr><td style="background:#ffffff;padding:36px 40px;">
+    ${body}
+  </td></tr>
+
+  <!-- FOOTER -->
+  <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 14px 14px;padding:20px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr><td align="center" style="padding-bottom:10px;">
+        <a href="${SITE_URL}" style="color:#059669;font-size:12px;font-weight:600;text-decoration:none;margin:0 10px;">🌐 serviyacol.com</a>
+        <span style="color:#cbd5e1;font-size:12px;">|</span>
+        <a href="mailto:soporte@serviyacol.com" style="color:#059669;font-size:12px;font-weight:600;text-decoration:none;margin:0 10px;">✉️ soporte@serviyacol.com</a>
+      </td></tr>
+      <tr><td align="center">
+        <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.7;">
+          © ${YEAR} ServiYa · Técnicos verificados de confianza en Colombia<br>
+          Este mensaje fue generado automáticamente, no respondas a este correo.
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+
+</table>
 </td></tr>
 </table>
-</td></tr></table>
-</body></html>`
+</body>
+</html>`
 }
 
-function cta(label, url, bg = '#059669') {
-  return `<div style="text-align:center;margin:24px 0;">
-    <a href="${url}" style="display:inline-block;background:${bg};color:#ffffff;font-weight:700;font-size:15px;padding:14px 36px;border-radius:12px;text-decoration:none;">${label}</a>
-  </div>`
+function ctaBtn(label, url, bg = '#059669') {
+  return `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 8px;">
+  <tr><td align="center">
+    <a href="${url}" style="display:inline-block;background:${bg};color:#ffffff;font-weight:700;font-size:15px;padding:14px 40px;border-radius:10px;text-decoration:none;letter-spacing:0.1px;">${label}</a>
+  </td></tr>
+</table>`
 }
 
-function infoRow(label, value, odd = false) {
-  const bg = odd ? 'background:#f9fafb;' : ''
-  return `<tr>
-    <td style="padding:9px 0;${bg}color:#6b7280;font-size:13px;font-weight:600;width:130px;">${label}</td>
-    <td style="padding:9px 0;${bg}color:#111827;font-size:13px;">${value || '—'}</td>
-  </tr>`
+function infoTable(rows) {
+  const rowsHtml = rows.map((r, i) => `
+    <tr>
+      <td style="padding:10px 16px;background:${i % 2 === 0 ? '#f8fafc' : '#ffffff'};border-bottom:1px solid #f1f5f9;width:34%;vertical-align:top;">
+        <span style="color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;">${r[0]}</span>
+      </td>
+      <td style="padding:10px 16px;background:${i % 2 === 0 ? '#f8fafc' : '#ffffff'};border-bottom:1px solid #f1f5f9;">
+        <span style="color:#0f172a;font-size:13px;font-weight:500;line-height:1.5;">${r[1] || '—'}</span>
+      </td>
+    </tr>`).join('')
+  return `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;margin:20px 0;">${rowsHtml}</table>`
 }
 
-// ── Templates ──────────────────────────────────────────────────────────────────
+function highlight(text, bg = '#f0fdf4', border = '#bbf7d0', color = '#064e3b') {
+  return `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;">
+  <tr><td style="background:${bg};border-left:4px solid ${border};border-radius:0 8px 8px 0;padding:14px 18px;">
+    <p style="color:${color};font-size:13px;line-height:1.65;margin:0;">${text}</p>
+  </td></tr>
+</table>`
+}
+
+function bigAmount(label, amount, ref = '') {
+  return `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;">
+  <tr><td align="center" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;border-radius:12px;padding:28px 20px;">
+    <p style="color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin:0 0 8px;">${label}</p>
+    <p style="color:#064e3b;font-size:38px;font-weight:900;margin:0;line-height:1;">${amount}</p>
+    ${ref ? `<p style="color:#94a3b8;font-size:11px;font-family:monospace;margin:10px 0 0;">${ref}</p>` : ''}
+  </td></tr>
+</table>`
+}
+
+// ── Templates ────────────────────────────────────────────────────────────────────
 
 function tplBienvenidaCliente(nombre) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:22px;font-weight:800;margin:0 0 8px;">¡Hola, ${nombre}! 🎉</h2>
-    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">
-      Bienvenido/a a <strong>ServiYa</strong>, la plataforma que conecta hogares y empresas con
-      técnicos verificados de Colombia.
-    </p>
-    <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin:16px 0;">
-      <p style="color:#065f46;font-weight:700;font-size:14px;margin:0 0 10px;">¿Qué puedes hacer?</p>
-      <p style="color:#374151;font-size:13px;line-height:1.8;margin:0;">
-        ✅ Solicitar técnicos para más de 8 categorías<br>
-        ⚡ Respuesta en menos de 1 hora<br>
-        🛡️ Garantía de satisfacción de 30 días<br>
-        💳 Pago 100% seguro en línea
+  return shell({
+    headerEmoji: '🎉',
+    headerTitle: '¡Bienvenido/a a ServiYa!',
+    headerSubtitle: 'Tu cuenta fue creada exitosamente',
+    body: `
+      <p style="color:#0f172a;font-size:15px;font-weight:600;margin:0 0 6px;">Hola, ${nombre} 👋</p>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 24px;">
+        Gracias por unirte a <strong style="color:#059669;">ServiYa</strong>. Somos la plataforma que conecta hogares y empresas con los mejores técnicos verificados de Colombia.
       </p>
-    </div>
-    ${cta('Solicitar un técnico ahora', `${SITE_URL}/solicitar`)}
-    <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">¿Necesitas ayuda? <a href="mailto:soporte@serviyacol.com" style="color:#059669;">soporte@serviyacol.com</a></p>
-  `)
+      ${highlight(`
+        <strong style="display:block;margin-bottom:8px;">¿Qué puedes hacer ahora?</strong>
+        ✅ &nbsp;Solicitar técnicos en más de 8 categorías<br>
+        ⚡ &nbsp;Recibir respuesta en menos de 1 hora<br>
+        💳 &nbsp;Pago 100% seguro en línea<br>
+        🛡️ &nbsp;Garantía de satisfacción de 30 días
+      `)}
+      ${ctaBtn('Solicitar un técnico ahora →', `${SITE_URL}/solicitar`)}
+      <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">
+        ¿Tienes preguntas? Escríbenos a <a href="mailto:soporte@serviyacol.com" style="color:#059669;font-weight:600;">soporte@serviyacol.com</a>
+      </p>
+    `
+  })
 }
 
 function tplBienvenidaTecnico(nombre) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:22px;font-weight:800;margin:0 0 8px;">¡Bienvenido/a, ${nombre}! 🔧</h2>
-    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">
-      Tu perfil de técnico en <strong>ServiYa</strong> fue creado exitosamente.
-      Nuestro equipo revisará tu documentación en las próximas 24 horas.
-    </p>
-    <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;padding:16px;margin:16px 0;">
-      <p style="color:#92400e;font-weight:700;font-size:14px;margin:0 0 10px;">⏳ Próximos pasos</p>
-      <p style="color:#374151;font-size:13px;line-height:1.8;margin:0;">
-        1. Nuestro admin revisará tu cédula y datos<br>
-        2. Recibirás un correo cuando seas verificado ✅<br>
-        3. Podrás ver y aceptar solicitudes de clientes
+  return shell({
+    headerEmoji: '🔧',
+    headerTitle: '¡Bienvenido/a al equipo!',
+    headerSubtitle: 'Tu registro como técnico fue recibido',
+    body: `
+      <p style="color:#0f172a;font-size:15px;font-weight:600;margin:0 0 6px;">Hola, ${nombre} 👋</p>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 24px;">
+        Tu perfil de técnico fue creado en <strong style="color:#059669;">ServiYa</strong>. Nuestro equipo revisará tu documentación en las próximas 24 horas.
       </p>
-    </div>
-    ${cta('Ver mi panel de técnico', `${SITE_URL}/tecnico`)}
-  `)
+      ${highlight(`
+        <strong style="display:block;margin-bottom:8px;">⏳ Próximos pasos:</strong>
+        1. Nuestro equipo revisará tu cédula y datos de perfil.<br>
+        2. Recibirás un correo cuando tu cuenta esté <strong>verificada ✅</strong><br>
+        3. Podrás ver y aceptar solicitudes de clientes en tu ciudad.
+      `, '#fffbeb', '#fde68a', '#92400e')}
+      ${ctaBtn('Ir a mi panel de técnico →', `${SITE_URL}/tecnico`, '#0369a1')}
+      <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">
+        ¿Tienes dudas? Escríbenos a <a href="mailto:soporte@serviyacol.com" style="color:#059669;font-weight:600;">soporte@serviyacol.com</a>
+      </p>
+    `
+  })
 }
 
 function tplAdminNuevoUsuario(tipo, nombre, email, telefono) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:20px;font-weight:800;margin:0 0 20px;">🆕 Nuevo ${tipo} registrado</h2>
-    <table width="100%" style="border-collapse:collapse;">
-      ${infoRow('Tipo', tipo, true)}
-      ${infoRow('Nombre', nombre)}
-      ${infoRow('Email', email, true)}
-      ${infoRow('Teléfono', telefono)}
-    </table>
-    ${tipo === 'Técnico' ? cta('Verificar técnico', `${SITE_URL}/admin`, '#7c3aed') : ''}
-  `)
+  const esTecnico = tipo === 'Técnico'
+  return shell({
+    headerEmoji: esTecnico ? '👷' : '🧑‍💼',
+    headerTitle: `Nuevo ${tipo} registrado`,
+    headerSubtitle: 'Acción requerida en el panel de administración',
+    body: `
+      <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        Se registró un nuevo <strong>${tipo}</strong> en la plataforma. Aquí está la información:
+      </p>
+      ${infoTable([
+        ['Nombre completo', nombre],
+        ['Correo electrónico', email || '—'],
+        ['Teléfono / WhatsApp', telefono || '—'],
+        ['Tipo de perfil', tipo],
+      ])}
+      ${esTecnico ? highlight(
+        '🔍 <strong>Este técnico requiere verificación de identidad.</strong> Revisa su cédula y datos antes de activarlo en la plataforma.',
+        '#fef3c7', '#fde68a', '#92400e'
+      ) : ''}
+      ${ctaBtn(`Ver en el panel de admin →`, `${SITE_URL}/admin`, esTecnico ? '#7c3aed' : '#059669')}
+    `
+  })
 }
 
 function tplAdminNuevaSolicitud(solicitud, clienteNombre) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:20px;font-weight:800;margin:0 0 20px;">📋 Nueva solicitud</h2>
-    <table width="100%" style="border-collapse:collapse;">
-      ${infoRow('Cliente', clienteNombre, true)}
-      ${infoRow('Servicio', solicitud.tipo_servicio)}
-      ${infoRow('Ciudad', solicitud.ciudad, true)}
-      ${infoRow('Urgencia', solicitud.urgencia)}
-      ${infoRow('Descripción', solicitud.descripcion, true)}
-    </table>
-    ${cta('Gestionar solicitudes', `${SITE_URL}/admin`, '#7c3aed')}
-  `)
+  return shell({
+    headerEmoji: '📋',
+    headerTitle: 'Nueva solicitud de servicio',
+    headerSubtitle: `Cliente: ${clienteNombre}`,
+    body: `
+      <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        Un cliente acaba de enviar una nueva solicitud de servicio. Asigna un técnico disponible lo antes posible.
+      </p>
+      ${infoTable([
+        ['Cliente', clienteNombre],
+        ['Servicio solicitado', solicitud.tipo_servicio || solicitud.categoria || '—'],
+        ['Ciudad', solicitud.ciudad || '—'],
+        ['Descripción', solicitud.descripcion || '—'],
+      ])}
+      ${ctaBtn('Gestionar solicitud →', `${SITE_URL}/admin`, '#7c3aed')}
+    `
+  })
 }
 
 function tplTecnicoAsignado(solicitud, tecnico, cliente) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:22px;font-weight:800;margin:0 0 8px;">¡Tienes un nuevo trabajo! 🎉</h2>
-    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">Hola <strong>${tecnico.nombre}</strong>, te han asignado la siguiente solicitud:</p>
-    <div style="background:#f0fdf4;border-radius:12px;padding:18px;margin:16px 0;">
-      <p style="color:#065f46;font-weight:800;font-size:16px;margin:0 0 12px;">📋 ${solicitud.tipo_servicio}</p>
-      <table width="100%" style="border-collapse:collapse;font-size:13px;">
-        ${infoRow('Cliente', cliente?.nombre)}
-        ${infoRow('Teléfono', cliente?.telefono, true)}
-        ${infoRow('Ciudad', solicitud.ciudad)}
-        ${infoRow('Descripción', solicitud.descripcion, true)}
-      </table>
-    </div>
-    ${cta('Ver detalles en mi panel', `${SITE_URL}/tecnico`)}
-  `)
+  return shell({
+    headerEmoji: '🎉',
+    headerTitle: '¡Nuevo trabajo asignado!',
+    headerSubtitle: `Servicio: ${solicitud.tipo_servicio || solicitud.categoria}`,
+    body: `
+      <p style="color:#0f172a;font-size:15px;font-weight:600;margin:0 0 6px;">Hola, ${tecnico.nombre} 👋</p>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px;">
+        Te acaban de asignar una nueva solicitud de servicio. Coordina la visita con el cliente lo antes posible.
+      </p>
+      ${infoTable([
+        ['Servicio', solicitud.tipo_servicio || solicitud.categoria || '—'],
+        ['Ciudad', solicitud.ciudad || '—'],
+        ['Nombre del cliente', cliente?.nombre || '—'],
+        ['Teléfono del cliente', cliente?.telefono || '—'],
+        ['Descripción', solicitud.descripcion || '—'],
+      ])}
+      ${highlight('📞 <strong>Consejo:</strong> Contacta al cliente a la brevedad para coordinar la visita y generar confianza.')}
+      ${ctaBtn('Ver mis trabajos →', `${SITE_URL}/tecnico`)}
+    `
+  })
 }
 
 function tplClienteTecnicoAsignado(solicitud, tecnico, cliente) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:22px;font-weight:800;margin:0 0 8px;">¡Tu técnico fue asignado! ✅</h2>
-    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">Hola <strong>${cliente.nombre}</strong>, encontramos el técnico ideal para tu solicitud de <em>${solicitud.tipo_servicio}</em>:</p>
-    <div style="background:#f0fdf4;border-radius:12px;padding:18px;margin:16px 0;">
-      <p style="color:#065f46;font-weight:800;font-size:18px;margin:0 0 4px;">${tecnico.nombre}</p>
-      <p style="color:#6b7280;font-size:13px;margin:0 0 14px;">${tecnico.categoria || ''} · ${tecnico.ciudad || ''}</p>
-      <table width="100%" style="border-collapse:collapse;font-size:13px;">
-        ${infoRow('📞 Teléfono', tecnico.telefono)}
-        ${infoRow('📍 Ciudad', solicitud.ciudad, true)}
+  return shell({
+    headerEmoji: '🔔',
+    headerTitle: '¡Tu técnico fue asignado!',
+    headerSubtitle: `Servicio: ${solicitud.tipo_servicio || solicitud.categoria}`,
+    body: `
+      <p style="color:#0f172a;font-size:15px;font-weight:600;margin:0 0 6px;">Hola, ${cliente?.nombre || 'Cliente'} 👋</p>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px;">
+        ¡Buenas noticias! Encontramos al técnico ideal para tu solicitud.
+      </p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:12px;overflow:hidden;border:1px solid #d1fae5;margin:0 0 20px;">
+        <tr><td style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);padding:22px 24px;">
+          <p style="color:#065f46;font-size:17px;font-weight:800;margin:0 0 4px;">👷 ${tecnico.nombre}</p>
+          <p style="color:#059669;font-size:12px;font-weight:600;margin:0 0 14px;">${tecnico.categoria || 'Técnico verificado'} · ${tecnico.ciudad || ''}</p>
+          <p style="color:#374151;font-size:13px;margin:0 0 4px;">
+            📞 <a href="tel:+57${(tecnico.telefono||'').replace(/\D/g,'')}" style="color:#065f46;font-weight:700;text-decoration:none;">${tecnico.telefono || '—'}</a>
+          </p>
+          <p style="color:#374151;font-size:13px;margin:0;">📍 ${solicitud.ciudad || '—'}</p>
+        </td></tr>
       </table>
-    </div>
-    <p style="color:#374151;font-size:13px;text-align:center;">El técnico se pondrá en contacto contigo pronto.</p>
-  `)
+      ${highlight('✅ El técnico se pondrá en contacto contigo pronto. Recuerda que tienes <strong>garantía de satisfacción de 30 días</strong> incluida.')}
+    `
+  })
 }
 
 function tplClienteEnCamino(solicitud, tecnico, cliente) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:22px;font-weight:800;margin:0 0 8px;">🚗 ¡Tu técnico está en camino!</h2>
-    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">
-      Hola <strong>${cliente.nombre}</strong>, <strong>${tecnico.nombre}</strong> ya está en camino para tu solicitud de <em>${solicitud.tipo_servicio}</em>.
-    </p>
-    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:18px;margin:16px 0;text-align:center;">
-      <p style="color:#1e40af;font-weight:700;font-size:14px;margin:0 0 8px;">¿Necesitas hablar con el técnico?</p>
-      <a href="tel:+57${(tecnico.telefono||'').replace(/\D/g,'')}" style="color:#1d4ed8;font-size:20px;font-weight:800;text-decoration:none;">📞 ${tecnico.telefono || '—'}</a>
-    </div>
-    <p style="color:#9ca3af;font-size:12px;text-align:center;">¿Algún problema? Escríbenos a <a href="mailto:soporte@serviyacol.com" style="color:#059669;">soporte@serviyacol.com</a></p>
-  `)
+  return shell({
+    headerEmoji: '🚗',
+    headerTitle: '¡Tu técnico está en camino!',
+    headerSubtitle: 'Prepárate para recibirlo',
+    body: `
+      <p style="color:#0f172a;font-size:15px;font-weight:600;margin:0 0 6px;">Hola, ${cliente?.nombre || 'Cliente'} 👋</p>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px;">
+        <strong>${tecnico?.nombre}</strong> ya está en camino. ¡Asegúrate de estar disponible para recibirlo!
+      </p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+        <tr><td align="center" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;border-radius:12px;padding:28px 20px;">
+          <p style="color:#1e40af;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin:0 0 12px;">Contacta a tu técnico directamente</p>
+          <a href="tel:+57${(tecnico?.telefono||'').replace(/\D/g,'')}" style="display:inline-block;background:#1d4ed8;color:#fff;font-size:20px;font-weight:800;padding:12px 28px;border-radius:10px;text-decoration:none;">
+            📞 ${tecnico?.telefono || '—'}
+          </a>
+        </td></tr>
+      </table>
+      ${infoTable([
+        ['Técnico', tecnico?.nombre || '—'],
+        ['Servicio', solicitud?.tipo_servicio || solicitud?.categoria || '—'],
+      ])}
+      <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">
+        ¿Algún inconveniente? <a href="mailto:soporte@serviyacol.com" style="color:#059669;font-weight:600;">soporte@serviyacol.com</a>
+      </p>
+    `
+  })
 }
 
 function tplClienteServicioCompletado(solicitud, tecnico, cliente) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:22px;font-weight:800;margin:0 0 8px;">⭐ Servicio completado</h2>
-    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">
-      Hola <strong>${cliente.nombre}</strong>, <strong>${tecnico.nombre}</strong> ha completado tu solicitud de <em>${solicitud.tipo_servicio}</em>. ¡Gracias por confiar en ServiYa!
-    </p>
-    <div style="background:#f0fdf4;border-radius:12px;padding:18px;margin:16px 0;text-align:center;">
-      <span style="font-size:48px;">🏆</span>
-      <p style="color:#065f46;font-weight:700;font-size:15px;margin:10px 0 0;">¡Trabajo finalizado con éxito!</p>
-    </div>
-    <p style="color:#9ca3af;font-size:12px;text-align:center;">¿Cómo fue tu experiencia? Cuéntanos: <a href="mailto:soporte@serviyacol.com" style="color:#059669;">soporte@serviyacol.com</a></p>
-  `)
+  return shell({
+    headerEmoji: '⭐',
+    headerTitle: 'Servicio completado',
+    headerSubtitle: `Técnico: ${tecnico?.nombre || ''}`,
+    body: `
+      <p style="color:#0f172a;font-size:15px;font-weight:600;margin:0 0 6px;">Hola, ${cliente?.nombre || 'Cliente'} 👋</p>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px;">
+        <strong>${tecnico?.nombre}</strong> ha completado tu solicitud de <strong>${solicitud?.tipo_servicio || solicitud?.categoria}</strong>. ¡Gracias por confiar en ServiYa!
+      </p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+        <tr><td align="center" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:32px 20px;">
+          <p style="font-size:50px;margin:0 0 12px;line-height:1;">🏆</p>
+          <p style="color:#065f46;font-size:17px;font-weight:800;margin:0 0 4px;">Trabajo finalizado con éxito</p>
+          <p style="color:#059669;font-size:13px;margin:0;">Garantía de satisfacción incluida por 30 días</p>
+        </td></tr>
+      </table>
+      ${highlight('💬 <strong>¿Cómo fue tu experiencia?</strong> Tu opinión es muy valiosa para nosotros y ayuda a mejorar el servicio. Escríbenos a <a href="mailto:soporte@serviyacol.com" style="color:#065f46;font-weight:600;">soporte@serviyacol.com</a>')}
+    `
+  })
 }
 
 function tplClienteCobro(cobro) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:22px;font-weight:800;margin:0 0 8px;">💳 Link de pago seguro</h2>
-    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">
-      Hola <strong>${cobro.cliente_nombre}</strong>, <strong>${cobro.tecnico_nombre}</strong> te envía el link de pago por:
-    </p>
-    <div style="background:#f0fdf4;border-radius:12px;padding:18px;margin:16px 0;">
-      <p style="color:#374151;font-size:13px;margin:0 0 6px;"><strong>Servicio:</strong> ${cobro.descripcion}</p>
-      <p style="color:#374151;font-size:13px;margin:0 0 6px;"><strong>Técnico:</strong> ${cobro.tecnico_nombre}</p>
-      <p style="color:#374151;font-size:13px;margin:0 0 12px;"><strong>Referencia:</strong> ${cobro.referencia}</p>
-      <p style="color:#064e3b;font-size:28px;font-weight:900;margin:0;">💰 $${cobro.valor_total?.toLocaleString('es-CO')} COP</p>
-    </div>
-    ${cta('💳 Pagar ahora de forma segura', cobro.bold_link || SITE_URL)}
-    <p style="color:#9ca3af;font-size:11px;text-align:center;">Tarjeta · PSE · Nequi · Bancolombia. 🔒 Pago 100% seguro.</p>
-  `)
+  return shell({
+    headerEmoji: '💳',
+    headerTitle: 'Link de pago seguro',
+    headerSubtitle: `De: ${cobro.tecnico_nombre}`,
+    body: `
+      <p style="color:#0f172a;font-size:15px;font-weight:600;margin:0 0 6px;">Hola, ${cobro.cliente_nombre} 👋</p>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px;">
+        Tu técnico <strong>${cobro.tecnico_nombre}</strong> ha generado el resumen de cobro por el servicio realizado.
+      </p>
+      ${bigAmount('Total a pagar', `$${cobro.valor_total?.toLocaleString('es-CO')} COP`, `Ref: ${cobro.referencia || '—'}`)}
+      ${infoTable([
+        ['Técnico', cobro.tecnico_nombre || '—'],
+        ['Servicio realizado', cobro.descripcion || '—'],
+      ])}
+      ${ctaBtn('💳 Pagar ahora de forma segura', cobro.bold_link || SITE_URL)}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr><td align="center">
+          <p style="color:#94a3b8;font-size:12px;margin:0 0 6px;">Métodos de pago aceptados</p>
+          <p style="color:#64748b;font-size:13px;font-weight:600;margin:0;">💳 Tarjeta &nbsp;·&nbsp; 🏦 PSE &nbsp;·&nbsp; 📱 Nequi &nbsp;·&nbsp; 🔒 Bancolombia</p>
+        </td></tr>
+      </table>
+    `
+  })
 }
 
 function tplClientePagoConfirmado(cobro) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:22px;font-weight:800;margin:0 0 8px;">✅ ¡Pago confirmado!</h2>
-    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">
-      Hola <strong>${cobro.cliente_nombre}</strong>, tu pago fue procesado exitosamente. Guarda este correo como comprobante.
-    </p>
-    <div style="background:#f0fdf4;border:1px solid #6ee7b7;border-radius:12px;padding:18px;margin:16px 0;">
-      <table width="100%" style="border-collapse:collapse;">
-        ${infoRow('Referencia', cobro.referencia, true)}
-        ${infoRow('Servicio', cobro.descripcion)}
-        ${infoRow('Técnico', cobro.tecnico_nombre, true)}
-        ${infoRow('Total pagado', `<strong style="color:#064e3b;">$${cobro.valor_total?.toLocaleString('es-CO')} COP ✅</strong>`)}
+  return shell({
+    headerEmoji: '🎉',
+    headerTitle: '¡Pago confirmado!',
+    headerSubtitle: `Referencia: ${cobro.referencia || '—'}`,
+    body: `
+      <p style="color:#0f172a;font-size:15px;font-weight:600;margin:0 0 6px;">Hola, ${cobro.cliente_nombre} 👋</p>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px;">
+        Tu pago fue procesado exitosamente. Guarda este correo como comprobante de tu transacción.
+      </p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+        <tr><td align="center" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;border-radius:12px;padding:28px 20px;">
+          <p style="font-size:40px;margin:0 0 10px;line-height:1;">✅</p>
+          <p style="color:#064e3b;font-size:34px;font-weight:900;margin:0 0 4px;line-height:1;">$${cobro.valor_total?.toLocaleString('es-CO')} COP</p>
+          <p style="color:#059669;font-size:13px;font-weight:600;margin:0;">Pago confirmado exitosamente</p>
+        </td></tr>
       </table>
-    </div>
-    <p style="color:#9ca3af;font-size:12px;text-align:center;">¿Algún problema? <a href="mailto:soporte@serviyacol.com" style="color:#059669;">soporte@serviyacol.com</a></p>
-  `)
+      ${infoTable([
+        ['Referencia de pago', cobro.referencia || '—'],
+        ['Servicio', cobro.descripcion || '—'],
+        ['Técnico', cobro.tecnico_nombre || '—'],
+      ])}
+      <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">
+        ¿Algún problema con tu pago? <a href="mailto:soporte@serviyacol.com" style="color:#059669;font-weight:600;">soporte@serviyacol.com</a>
+      </p>
+    `
+  })
 }
 
 function tplTecnicoPagoRecibido(cobro) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:22px;font-weight:800;margin:0 0 8px;">💰 ¡Pago recibido!</h2>
-    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">
-      Hola <strong>${cobro.tecnico_nombre}</strong>, el cliente pagó tu servicio. ServiYa procesará tu transferencia próximamente.
-    </p>
-    <div style="background:#f0fdf4;border-radius:12px;padding:18px;margin:16px 0;">
-      <table width="100%" style="border-collapse:collapse;">
-        ${infoRow('Servicio', cobro.descripcion, true)}
-        ${infoRow('Cliente', cobro.cliente_nombre)}
-        ${infoRow('Referencia', cobro.referencia, true)}
-        ${infoRow('Total cobrado', `$${cobro.valor_total?.toLocaleString('es-CO')} COP`)}
-        ${infoRow('Comisión (15%)', `-$${cobro.valor_comision?.toLocaleString('es-CO')} COP`, true)}
-      </table>
-      <p style="color:#064e3b;font-size:24px;font-weight:900;margin:14px 0 0;border-top:1px solid #d1fae5;padding-top:14px;">
-        Recibes: $${cobro.valor_tecnico?.toLocaleString('es-CO')} COP 🎉
+  return shell({
+    headerEmoji: '💰',
+    headerTitle: '¡Pago recibido!',
+    headerSubtitle: `Cliente: ${cobro.cliente_nombre || '—'}`,
+    body: `
+      <p style="color:#0f172a;font-size:15px;font-weight:600;margin:0 0 6px;">Hola, ${cobro.tecnico_nombre} 👋</p>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px;">
+        ¡El cliente acaba de pagar! ServiYa procesará tu transferencia en los próximos días hábiles.
       </p>
-    </div>
-  `)
+      ${infoTable([
+        ['Servicio', cobro.descripcion || '—'],
+        ['Cliente', cobro.cliente_nombre || '—'],
+        ['Referencia', cobro.referencia || '—'],
+        ['Total cobrado al cliente', `$${cobro.valor_total?.toLocaleString('es-CO')} COP`],
+        ['Comisión ServiYa (15%)', `-$${cobro.valor_comision?.toLocaleString('es-CO')} COP`],
+      ])}
+      ${bigAmount('Lo que recibes', `$${cobro.valor_tecnico?.toLocaleString('es-CO')} COP`)}
+    `
+  })
 }
 
 function tplTecnicoPagado(tecnico, cobro) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:22px;font-weight:800;margin:0 0 8px;">✅ ServiYa te transfirió tu pago</h2>
-    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">Hola <strong>${tecnico.nombre}</strong>, se realizó la transferencia a tu cuenta bancaria registrada.</p>
-    <div style="background:#f0fdf4;border:1px solid #6ee7b7;border-radius:12px;padding:20px;margin:16px 0;text-align:center;">
-      <p style="color:#6b7280;font-size:13px;margin:0;">Monto transferido</p>
-      <p style="color:#064e3b;font-size:36px;font-weight:900;margin:6px 0;">$${cobro.valor_tecnico?.toLocaleString('es-CO')} COP</p>
-      <p style="color:#9ca3af;font-size:12px;margin:0;">Ref: ${cobro.referencia || '—'}</p>
-    </div>
-    <p style="color:#374151;font-size:13px;text-align:center;">Revisa tu cuenta bancaria. ¡Gracias por tu trabajo! 💚</p>
-  `)
+  return shell({
+    headerEmoji: '✅',
+    headerTitle: 'Transferencia realizada',
+    headerSubtitle: 'ServiYa depositó tu pago',
+    body: `
+      <p style="color:#0f172a;font-size:15px;font-weight:600;margin:0 0 6px;">Hola, ${tecnico.nombre} 👋</p>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px;">
+        ServiYa ha realizado la transferencia a tu cuenta bancaria registrada. Revisa tu saldo en los próximos minutos.
+      </p>
+      ${bigAmount('Monto transferido', `$${cobro.valor_tecnico?.toLocaleString('es-CO')} COP`, cobro.referencia ? `Ref: ${cobro.referencia}` : '')}
+      ${highlight('✨ <strong>¡Gracias por tu excelente trabajo!</strong> Seguimos contando contigo para brindar el mejor servicio a nuestros clientes en Colombia.')}
+    `
+  })
 }
 
 function tplAdminPagoConfirmado(cobro) {
-  return shell(`
-    <h2 style="color:#064e3b;font-size:20px;font-weight:800;margin:0 0 20px;">💸 Pago confirmado por Bold</h2>
-    <table width="100%" style="border-collapse:collapse;">
-      ${infoRow('Referencia', cobro.referencia, true)}
-      ${infoRow('Cliente', cobro.cliente_nombre)}
-      ${infoRow('Técnico', cobro.tecnico_nombre, true)}
-      ${infoRow('Servicio', cobro.descripcion)}
-      ${infoRow('Total', `<strong style="color:#064e3b;">$${cobro.valor_total?.toLocaleString('es-CO')} COP</strong>`, true)}
-      ${infoRow('Comisión ServiYa', `<strong style="color:#059669;">$${cobro.valor_comision?.toLocaleString('es-CO')} COP</strong>`)}
-      ${infoRow('Para técnico', `$${cobro.valor_tecnico?.toLocaleString('es-CO')} COP`, true)}
-    </table>
-    ${cta('Ver en panel admin', `${SITE_URL}/admin`, '#7c3aed')}
-  `)
+  return shell({
+    headerEmoji: '💸',
+    headerTitle: 'Pago confirmado por Bold',
+    headerSubtitle: `Ref: ${cobro.referencia || '—'}`,
+    body: `
+      <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        Bold confirmó un pago exitoso. Aquí está el resumen completo de la transacción:
+      </p>
+      ${infoTable([
+        ['Referencia', cobro.referencia || '—'],
+        ['Cliente', cobro.cliente_nombre || '—'],
+        ['Técnico', cobro.tecnico_nombre || '—'],
+        ['Descripción del servicio', cobro.descripcion || '—'],
+        ['Total pagado por cliente', `$${cobro.valor_total?.toLocaleString('es-CO')} COP`],
+        ['Comisión ServiYa', `$${cobro.valor_comision?.toLocaleString('es-CO')} COP`],
+        ['Para el técnico', `$${cobro.valor_tecnico?.toLocaleString('es-CO')} COP`],
+      ])}
+      ${ctaBtn('Ver en el panel de admin →', `${SITE_URL}/admin`, '#7c3aed')}
+    `
+  })
 }
