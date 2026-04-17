@@ -47,11 +47,11 @@ export async function POST(req) {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.serviyacol.com'
 
-    // ── Crear link de pago Bold (Smart Checkout con firma) ─────────────────
-    // Bold requiere una integrity_signature = HMAC-SHA256(secretKey, orderId+amount+currency)
-    // Documentación: https://bold.co/developers/checkout/integrity
+    // ── Crear link de pago Bold (Smart Checkout con firma SHA256) ──────────
+    // Firma = SHA256(orderId + amount + currency + secretKey)
+    // Parámetros según docs Bold Colombia: orderId, redirectionUrl, integritySignature
     const boldIdentityKey = process.env.BOLD_IDENTITY_KEY || ''
-    const boldSecretKey   = process.env.BOLD_API_KEY || ''   // Llave secreta de producción
+    const boldSecretKey   = process.env.BOLD_API_KEY || ''
 
     let boldLink = null
     let boldPaymentLinkId = referencia
@@ -60,27 +60,23 @@ export async function POST(req) {
       const amountStr   = String(monto)
       const currencyStr = 'COP'
 
-      // Firma = HMAC-SHA256(llave_secreta, referencia + monto_en_centavos + moneda)
-      // Bold usa el monto en la unidad mínima: para COP son pesos (sin centavos)
-      const msgToSign = `${referencia}${amountStr}${currencyStr}`
-      const { createHmac } = await import('crypto')
-      const integritySignature = createHmac('sha256', boldSecretKey)
-        .update(msgToSign)
+      // SHA256 simple de la concatenación (NO es HMAC)
+      const { createHash } = await import('crypto')
+      const integritySignature = createHash('sha256')
+        .update(`${referencia}${amountStr}${currencyStr}${boldSecretKey}`)
         .digest('hex')
 
-      // Formato correcto: POST form redirect o URL con parámetros GET
       const params = new URLSearchParams({
+        orderId:             referencia,          // Bold usa orderId, no reference
         amount:              amountStr,
         currency:            currencyStr,
-        reference:           referencia,
         description:         `ServiYa: ${descripcion.substring(0, 80)}`,
-        redirect_url:        `${siteUrl}/pago-exitoso?ref=${referencia}`,
-        integrity_signature: integritySignature,
+        redirectionUrl:      `${siteUrl}/pago-exitoso?ref=${referencia}`,
+        integritySignature,                        // camelCase
       })
       boldLink = `https://checkout.bold.co/payment/${boldIdentityKey}?${params.toString()}`
       boldPaymentLinkId = referencia
     } else {
-      // Fallback — link placeholder sin credenciales configuradas
       boldLink          = `${siteUrl}/pago-demo?ref=${referencia}`
       boldPaymentLinkId = `DEMO-${referencia}`
     }
