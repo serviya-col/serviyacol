@@ -155,19 +155,28 @@ button, a, [role="button"] {
   min-height: 100dvh;
 }
 
-/* ─── Fix browser autofill — dark-theme inputs (login screens, cobrar) ────────
-   Chrome/Brave autofill overrides background-color with solid white/yellow,
-   making white text invisible. The inset box-shadow "paints" over the autofill
-   background while preserving the dark visual. Apply class .input-dark to all
-   dark-bg inputs (in login screens, cobrar page, etc.)
+/* ─── Dark-theme inputs: force solid dark bg + white text ─────────────────────
+   iOS Safari ignores webkit-box-shadow for autofill. The fix is to force a real
+   background-color and text color with !important so no browser override wins.
+   Apply .input-dark to login/cobrar inputs that have text-white on dark bg.
 ── */
+.input-dark {
+  background-color: rgba(13, 42, 29, 0.85) !important;
+  color: white !important;
+  -webkit-text-fill-color: white !important;
+  caret-color: #34d399;
+}
+
+/* Autofill override — belts AND suspenders (box-shadow for Chrome + bg for iOS) */
 .input-dark:-webkit-autofill,
 .input-dark:-webkit-autofill:hover,
 .input-dark:-webkit-autofill:focus,
 .input-dark:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px #0d2a1d inset !important;
   -webkit-text-fill-color: white !important;
-  caret-color: white;
+  background-color: #0d2a1d !important;
+  color: white !important;
+  caret-color: #34d399;
 }
 
 /* ─── Ensure inputs always show their text color ─── */
