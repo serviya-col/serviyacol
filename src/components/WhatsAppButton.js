@@ -2,8 +2,8 @@
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 
-const WHATSAPP_NUMBER = '573001234567'
-const WHATSAPP_MESSAGE = 'Hola ServiYa 👋 Necesito un técnico a domicilio.'
+const WHATSAPP_NUMBER = '526611310397'
+const WHATSAPP_MESSAGE = 'Hola ServiYa 👋 Quiero agendar un técnico a domicilio. ¿Me pueden ayudar con más información?'
 
 export default function WhatsAppButton() {
   const [hovered, setHovered] = useState(false)

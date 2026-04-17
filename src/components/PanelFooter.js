@@ -18,7 +18,7 @@ export default function PanelFooter({ role = 'panel' }) {
             {/* Links de contacto — wrap on mobile */}
             <div className="flex flex-wrap gap-x-4 gap-y-3">
               <a
-                href="https://wa.me/573138537261?text=Hola+ServiYa+%F0%9F%91%8B"
+                href="https://wa.me/526611310397?text=Hola+ServiYa+Soporte+%F0%9F%91%8B"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-emerald-600 transition-colors min-h-[44px] sm:min-h-0"

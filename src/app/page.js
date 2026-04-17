@@ -366,16 +366,24 @@ export default function Home() {
               </p>
               {/* Social icons */}
               <div className="flex gap-3 mt-4">
-                {['Instagram', 'Facebook', 'TikTok'].map((red) => (
-                  <a
-                    key={red}
-                    href="#"
-                    aria-label={red}
-                    className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-xs text-white/50 hover:text-white transition-colors"
-                  >
-                    {red[0]}
-                  </a>
-                ))}
+                <a
+                  href="https://www.instagram.com/serviya_col1?igsh=MWdyazIyem51N2g0dQ%3D%3D&utm_source=qr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                  className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-xs text-white/50 hover:text-white transition-colors"
+                >
+                  I
+                </a>
+                <a
+                  href="https://www.facebook.com/ServiYacol1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook"
+                  className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-xs text-white/50 hover:text-white transition-colors"
+                >
+                  F
+                </a>
               </div>
             </div>
 
@@ -407,7 +415,7 @@ export default function Home() {
                 <li><Link href="/terminos" className="text-xs hover:text-white transition-colors py-0.5 block">Términos de uso</Link></li>
                 <li><Link href="/privacidad" className="text-xs hover:text-white transition-colors py-0.5 block">Privacidad</Link></li>
                 <li><a href="mailto:soporte@serviyacol.com" className="text-xs hover:text-white transition-colors py-0.5 block">Contacto</a></li>
-                <li><a href="https://wa.me/573138537261" target="_blank" rel="noopener noreferrer" className="text-xs hover:text-white transition-colors py-0.5 block">WhatsApp</a></li>
+                <li><a href="https://wa.me/526611310397" target="_blank" rel="noopener noreferrer" className="text-xs hover:text-white transition-colors py-0.5 block">WhatsApp</a></li>
               </ul>
             </div>
           </div>

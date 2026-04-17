@@ -213,7 +213,7 @@ function SolicitarForm() {
           {/* CTAs */}
           <div className="grid grid-cols-2 gap-3">
             <a
-              href={`https://wa.me/573138537261?text=Hola, solicité un ${form.categoria} en ${form.ciudad} para ${form.cliente_nombre}`}
+              href={`https://wa.me/526611310397?text=Hola, solicité un ${form.categoria} en ${form.ciudad} para ${form.cliente_nombre}`}
               target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold py-3 rounded-xl transition-all active:scale-95 text-sm"
             >

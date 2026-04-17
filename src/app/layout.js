@@ -161,8 +161,9 @@ const jsonLd = {
         addressCountry: 'CO',
       })),
       sameAs: [
-        'https://www.instagram.com/serviyacol',
-        'https://wa.me/573138537261',
+        'https://www.instagram.com/serviya_col1?igsh=MWdyazIyem51N2g0dQ%3D%3D&utm_source=qr',
+        'https://www.facebook.com/ServiYacol1',
+        'https://wa.me/526611310397',
       ],
       hasOfferCatalog: {
         '@type': 'OfferCatalog',
