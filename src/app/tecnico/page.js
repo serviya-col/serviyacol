@@ -457,8 +457,76 @@ function MisCobrosView({ cobros, tecnico }) {
   )
 }
 
+// ─── Widget de Disponibilidad ────────────────────────────────────────────────
+const DISPON_OPTS = [
+  {
+    value: 'disponible',
+    emoji: '🟢',
+    label: 'Disponible',
+    desc: 'Aparezco en búsquedas de clientes',
+    ringCls: 'ring-emerald-400',
+    activeCls: 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30',
+    inactiveCls: 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-300',
+  },
+  {
+    value: 'ocupado',
+    emoji: '🟡',
+    label: 'Ocupado',
+    desc: 'Estoy en un trabajo en este momento',
+    ringCls: 'ring-amber-400',
+    activeCls: 'bg-amber-500 text-white shadow-lg shadow-amber-900/30',
+    inactiveCls: 'bg-white border border-gray-200 text-gray-600 hover:border-amber-300',
+  },
+  {
+    value: 'fuera_de_servicio',
+    emoji: '🔴',
+    label: 'No disponible',
+    desc: 'No recibiré solicitudes por hoy',
+    ringCls: 'ring-red-400',
+    activeCls: 'bg-red-500 text-white shadow-lg shadow-red-900/30',
+    inactiveCls: 'bg-white border border-gray-200 text-gray-600 hover:border-red-300',
+  },
+]
+
+function DisponibilidadWidget({ disponibilidad, onChange, saving }) {
+  const current = DISPON_OPTS.find(o => o.value === disponibilidad) || DISPON_OPTS[0]
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-sm font-bold text-gray-800">Mi disponibilidad</p>
+          <p className="text-xs text-gray-400 mt-0.5">Los clientes ven tu estado en tiempo real</p>
+        </div>
+        {saving && (
+          <span className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin block" />
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {DISPON_OPTS.map(opt => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl font-semibold text-sm transition-all active:scale-95 ${
+              disponibilidad === opt.value
+                ? `${opt.activeCls} ring-2 ${opt.ringCls} ring-offset-1`
+                : opt.inactiveCls
+            }`}
+          >
+            <span className="text-xl">{opt.emoji}</span>
+            <span className="text-xs font-bold leading-tight text-center">{opt.label}</span>
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-gray-400 text-center mt-3 italic">
+        {current.desc}
+      </p>
+    </div>
+  )
+}
+
 // ─── Dashboard Técnico ────────────────────────────────────────────────────────
-function DashboardView({ tecnico, misSolicitudes, disponiblesCount, setView }) {
+function DashboardView({ tecnico, misSolicitudes, disponiblesCount, setView, onChangeDisponibilidad, savingDispon }) {
   const kpis = [
     { icon: '📋', label: 'Disponibles en mi ciudad', value: disponiblesCount,                                              color: 'text-blue-600'    },
     { icon: '🔄', label: 'En curso',                  value: misSolicitudes.filter(s => s.estado === 'en_curso').length,   color: 'text-purple-600'  },
@@ -488,6 +556,12 @@ function DashboardView({ tecnico, misSolicitudes, disponiblesCount, setView }) {
         <h2 className="text-xl font-extrabold text-gray-900">Hola, {tecnico.nombre.split(' ')[0]}! 👋</h2>
         <p className="text-sm text-gray-400 mt-0.5">Bienvenido a tu panel de ServiYa</p>
       </div>
+      {/* ── Widget de disponibilidad ── */}
+      <DisponibilidadWidget
+        disponibilidad={tecnico.disponibilidad || 'disponible'}
+        onChange={onChangeDisponibilidad}
+        saving={savingDispon}
+      />
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-7">
         {kpis.map(k => (
           <div key={k.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
@@ -1125,6 +1199,15 @@ export default function TecnicoPage() {
     setTecnico(prev => ({ ...prev, ...campos }))
   }
 
+  const [savingDispon, setSavingDispon] = useState(false)
+  const updateDisponibilidad = async (valor) => {
+    if (valor === tecnico?.disponibilidad) return
+    setSavingDispon(true)
+    setTecnico(prev => ({ ...prev, disponibilidad: valor })) // optimistic update
+    await supabase.from('tecnicos').update({ disponibilidad: valor }).eq('id', tecnico.id).eq('auth_user_id', user.id)
+    setSavingDispon(false)
+  }
+
   const updatePago = async (campos) => {
     if (!campos.banco_nombre || !campos.tipo_cuenta || !campos.numero_cuenta) return
     const payload = { tecnico_id: tecnico.id, ...campos }
@@ -1159,7 +1242,7 @@ export default function TecnicoPage() {
       )}
       {/* pt-14 on mobile: space for fixed header. pb-28 on mobile: space for bottom nav + FAB */}
       <main className="flex-1 min-h-screen overflow-auto pt-14 pb-28 md:pt-0 md:pb-0">
-        {view === 'dashboard'   && <DashboardView tecnico={tecnico} misSolicitudes={misSols} disponiblesCount={disponibles.length} setView={setView} />}
+        {view === 'dashboard'   && <DashboardView tecnico={tecnico} misSolicitudes={misSols} disponiblesCount={disponibles.length} setView={setView} onChangeDisponibilidad={updateDisponibilidad} savingDispon={savingDispon} />}
         {view === 'disponibles' && <DisponiblesView disponibles={disponibles} onAceptar={aceptar} />}
         {view === 'mias'        && <MiasSolicitudesView solicitudes={misSols} onUpdateEstado={updateEstado} />}
         {view === 'cobros'      && <MisCobrosView cobros={misCobros} tecnico={tecnico} />}

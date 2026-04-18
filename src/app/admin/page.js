@@ -1298,6 +1298,12 @@ export default function AdminPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tecnico: tec, cobro }),
       }).catch(() => {})
+      // Reset disponibilidad si no tiene otros cobros pendientes
+      const pendientes = cobros.filter(c => c.tecnico_id === tec.id && !c.pagado_tecnico && c.id !== id)
+      if (pendientes.length === 0 && tec.disponibilidad === 'ocupado') {
+        await supabase.from('tecnicos').update({ disponibilidad: 'disponible' }).eq('id', tec.id)
+        setT(prev => prev.map(t => t.id === tec.id ? { ...t, disponibilidad: 'disponible' } : t))
+      }
     }
   }
   // Actualizar estado del cobro manualmente (cuando Bold no dispara el webhook)
@@ -1306,6 +1312,18 @@ export default function AdminPage() {
     if (nuevoEstado === 'pagado') updateData.fecha_pago = new Date().toISOString()
     await supabase.from('cobros').update(updateData).eq('id', id)
     setCobros(prev => prev.map(c => c.id === id ? { ...c, ...updateData } : c))
+    // Reset disponibilidad del técnico cuando cobro queda como pagado
+    if (nuevoEstado === 'pagado') {
+      const cobro = cobros.find(c => c.id === id)
+      const tec   = tecnicos.find(t => t.id === cobro?.tecnico_id)
+      if (tec && tec.disponibilidad === 'ocupado') {
+        const pendientes = cobros.filter(c => c.tecnico_id === tec.id && c.estado === 'pendiente' && c.id !== id)
+        if (pendientes.length === 0) {
+          await supabase.from('tecnicos').update({ disponibilidad: 'disponible' }).eq('id', tec.id)
+          setT(prev => prev.map(t => t.id === tec.id ? { ...t, disponibilidad: 'disponible' } : t))
+        }
+      }
+    }
   }
   const logout = async () => { await supabase.auth.signOut(); setUser(null) }
 

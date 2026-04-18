@@ -126,6 +126,27 @@ export async function POST(req) {
       }
     }
 
+    // ── 7b. Reset disponibilidad del técnico si el cobro fue pagado ──────────────
+    if (nuevoEstadoCobro === 'pagado' && cobro.tecnico_id) {
+      // Verificar si tiene otros cobros pendientes
+      const { count: pendientesCount } = await supabaseAdmin
+        .from('cobros')
+        .select('id', { count: 'exact', head: true })
+        .eq('tecnico_id', cobro.tecnico_id)
+        .in('estado', ['pendiente', 'en_proceso'])
+        .neq('id', cobro.id)
+
+      if (pendientesCount === 0) {
+        // Solo reset si estaba 'ocupado' (no 'fuera_de_servicio' que es manual)
+        await supabaseAdmin
+          .from('tecnicos')
+          .update({ disponibilidad: 'disponible' })
+          .eq('id', cobro.tecnico_id)
+          .eq('disponibilidad', 'ocupado')
+        console.log(`Técnico ${cobro.tecnico_id} → disponible (servicio pagado)`)
+      }
+    }
+
     // ── 8. Notificaciones y tracking (solo en pagos aprobados) ──────────────
     if (nuevoEstadoCobro === 'pagado') {
       try {
