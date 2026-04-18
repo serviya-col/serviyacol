@@ -147,32 +147,46 @@ export async function notifyBienvenidaTecnico({ nombre, email, telefono }) {
 
 /** Admin asigna técnico a solicitud */
 export async function notifyTecnicoAsignado({ solicitud, tecnico, cliente }) {
-  await Promise.all([
-    // → Técnico (email)
-    sendEmail({
-      to: tecnico.email,
-      subject: `🎉 Te asignaron una solicitud: ${solicitud.tipo_servicio}`,
-      html: tplTecnicoAsignado(solicitud, tecnico, cliente),
-    }),
-    // → Técnico (WhatsApp)
-    sendWhatsApp({
-      phone: tecnico.telefono,
-      templateName: process.env.WHATSAPP_TPL_TECNICO_ASIGNADO || 'serviya_tecnico_asignado',
-      bodyParams: [tecnico.nombre, solicitud.tipo_servicio, cliente?.nombre || '—', solicitud.ciudad || '—'],
-    }),
-    // → Cliente (email)
-    ...(cliente?.email ? [sendEmail({
+  // Ejecutamos secuencialmente para evitar que la API de Meta descarte mensajes 
+  // por rate-limit si cliente y técnico tienen el mismo número durante pruebas.
+  const tasks = []
+
+  // → Técnico (email)
+  tasks.push(sendEmail({
+    to: tecnico.email,
+    subject: `🎉 Te asignaron una solicitud: ${solicitud.tipo_servicio}`,
+    html: tplTecnicoAsignado(solicitud, tecnico, cliente),
+  }))
+
+  // → Técnico (WhatsApp)
+  tasks.push(sendWhatsApp({
+    phone: tecnico.telefono,
+    templateName: process.env.WHATSAPP_TPL_TECNICO_ASIGNADO || 'serviya_tecnico_asignado',
+    bodyParams: [tecnico.nombre, solicitud.tipo_servicio, cliente?.nombre || '—', solicitud.ciudad || '—'],
+  }))
+
+  // → Cliente (email)
+  if (cliente?.email) {
+    tasks.push(sendEmail({
       to: cliente.email,
       subject: `✅ Tu técnico está asignado — ${solicitud.tipo_servicio}`,
       html: tplClienteTecnicoAsignado(solicitud, tecnico, cliente),
-    })] : []),
-    // → Cliente (WhatsApp)
-    ...(cliente?.telefono ? [sendWhatsApp({
+    }))
+  }
+
+  // → Cliente (WhatsApp)
+  if (cliente?.telefono) {
+    tasks.push(sendWhatsApp({
       phone: cliente.telefono,
       templateName: process.env.WHATSAPP_TPL_CLIENTE_ASIGNADO || 'serviya_cliente_tecnico_asignado',
       bodyParams: [cliente.nombre, tecnico.nombre, solicitud.tipo_servicio, tecnico.telefono || '—'],
-    })] : []),
-  ])
+    }))
+  }
+
+  for (const task of tasks) {
+    await task
+    await new Promise(r => setTimeout(r, 100)) // delay to guarantee order and parsing
+  }
 }
 
 /** Técnico indica que está en camino (estado: en_curso) */
