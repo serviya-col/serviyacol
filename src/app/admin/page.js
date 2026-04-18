@@ -1270,6 +1270,18 @@ export default function AdminPage() {
   const verificarTecnico = async (id, verificado) => {
     await supabase.from('tecnicos').update({ verificado }).eq('id', id)
     setT(prev => prev.map(t => t.id === id ? { ...t, verificado } : t))
+
+    // Notificar al técnico cuando su cuenta queda verificada
+    if (verificado) {
+      const tec = tecnicos.find(t => t.id === id)
+      if (tec?.email) {
+        fetch('/api/notify/verificacion-tecnico', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tecnico: { nombre: tec.nombre, email: tec.email, telefono: tec.telefono } }),
+        }).catch(() => {})
+      }
+    }
   }
   const activarTecnico  = async (id, activo) => {
     await supabase.from('tecnicos').update({ activo }).eq('id', id)

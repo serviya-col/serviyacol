@@ -319,6 +319,22 @@ export async function notifyNuevaSolicitud({ solicitud, clienteNombre }) {
   ])
 }
 
+/** Admin verificó la cuenta del técnico — notifica al técnico */
+export async function notifyTecnicoVerificado({ nombre, email, telefono }) {
+  await Promise.all([
+    sendEmail({
+      to: email,
+      subject: '✅ ¡Tu cuenta de técnico ha sido verificada! — ServiYa',
+      html: tplTecnicoVerificado(nombre),
+    }),
+    sendWhatsApp({
+      phone: telefono,
+      templateName: process.env.WHATSAPP_TPL_TECNICO_VERIFICADO || 'serviya_tecnico_verificado',
+      bodyParams: [nombre],
+    }),
+  ])
+}
+
 // ─── HTML Email Templates ──────────────────────────────────────────────────────
 // Design system: slate background, white card, emerald brand, clean info rows
 
@@ -464,6 +480,33 @@ function tplBienvenidaTecnico(nombre) {
         3. Podrás ver y aceptar solicitudes de clientes en tu ciudad.
       `, '#fffbeb', '#fde68a', '#92400e')}
       ${ctaBtn('Ir a mi panel de técnico →', `${SITE_URL}/tecnico`, '#0369a1')}
+      <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">
+        ¿Tienes dudas? Escríbenos a <a href="mailto:soporte@serviyacol.com" style="color:#059669;font-weight:600;">soporte@serviyacol.com</a>
+      </p>
+    `
+  })
+}
+
+function tplTecnicoVerificado(nombre) {
+  return shell({
+    headerEmoji: '✅',
+    headerTitle: '¡Cuenta verificada!',
+    headerSubtitle: 'Tu perfil de técnico está activo en ServiYa',
+    body: `
+      <p style="color:#0f172a;font-size:15px;font-weight:600;margin:0 0 6px;">¡Felicitaciones, ${nombre}! 🎉</p>
+      <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 24px;">
+        Nuestro equipo revisó tu documentación y tu cuenta de técnico en
+        <strong style="color:#059669;">ServiYa</strong> ha sido <strong>oficialmente verificada</strong>.
+        Ya puedes empezar a recibir clientes y generar ingresos.
+      </p>
+      ${highlight(`
+        <strong style="display:block;margin-bottom:8px;">🚀 ¿Qué puedes hacer ahora?</strong>
+        ✅ Ver solicitudes de clientes en tu ciudad.<br>
+        💳 Generar links de cobro seguros con Bold.<br>
+        📊 Llevar control de tus pagos pendientes y recibidos.<br>
+        ⭐ Construir tu reputación con reseñas verificadas.
+      `, '#f0fdf4', '#86efac', '#065f46')}
+      ${ctaBtn('Ir a mi panel de técnico →', `${SITE_URL}/tecnico`, '#059669')}
       <p style="color:#94a3b8;font-size:12px;text-align:center;margin:16px 0 0;">
         ¿Tienes dudas? Escríbenos a <a href="mailto:soporte@serviyacol.com" style="color:#059669;font-weight:600;">soporte@serviyacol.com</a>
       </p>
