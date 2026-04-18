@@ -965,8 +965,14 @@ function ProfileCompletionGate({ tecnico, pago, onDone, onUpdatePerfil, onUpdate
       return
     }
     setSavingBanco(true)
-    await onUpdatePago({ banco_nombre: bancoNombre.trim(), tipo_cuenta: tipoCuenta, numero_cuenta: numeroCuenta.trim() })
+    const { error } = await onUpdatePago({ banco_nombre: bancoNombre.trim(), tipo_cuenta: tipoCuenta, numero_cuenta: numeroCuenta.trim() }) || {}
     setSavingBanco(false)
+    
+    if (error) {
+      setErrorBanco('Error al guardar. Verifica que los datos sean correctos.')
+      return
+    }
+    
     setSavedBanco(true)
     setTimeout(() => onDone(), 800)
   }
@@ -1420,10 +1426,22 @@ export default function TecnicoPage() {
   }
 
   const updatePago = async (campos) => {
-    if (!campos.banco_nombre || !campos.tipo_cuenta || !campos.numero_cuenta) return
-    const payload = { tecnico_id: tecnico.id, ...campos }
-    await supabase.from('tecnico_pagos').upsert(payload, { onConflict: 'tecnico_id' })
+    if (!campos.banco_nombre || !campos.tipo_cuenta || !campos.numero_cuenta) return { error: { message: 'Campos incompletos' } }
+    
+    // DB check allows 'ahorros' or 'corriente'. Force lowercase & map alternatives.
+    let tc = campos.tipo_cuenta.toLowerCase()
+    if (tc === 'nequi' || tc === 'daviplata') tc = 'ahorros'
+
+    const payload = { tecnico_id: tecnico.id, ...campos, tipo_cuenta: tc }
+    const { error } = await supabase.from('tecnico_pagos').upsert(payload, { onConflict: 'tecnico_id' })
+    
+    if (error) {
+      console.error('Supabase upsert error:', error)
+      return { error }
+    }
+    
     setPago(prev => ({ ...(prev || { tecnico_id: tecnico.id }), ...campos }))
+    return { error: null }
   }
 
   const logout = async () => { await supabase.auth.signOut(); setUser(null); setTecnico(null); setPago(null) }
