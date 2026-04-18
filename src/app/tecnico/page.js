@@ -925,6 +925,216 @@ function MiasSolicitudesView({ solicitudes, onUpdateEstado }) {
 }
 
 // ─── Mi perfil ────────────────────────────────────────────────────────────────
+// ─── Profile Completion Gate ────────────────────────────────────────────────────
+function ProfileCompletionGate({ tecnico, pago, onDone, onUpdatePerfil, onUpdatePago }) {
+  const hasFoto    = Boolean(tecnico.foto_perfil_url)
+  const hasBanco   = Boolean(pago?.banco_nombre && pago?.tipo_cuenta && pago?.numero_cuenta)
+  const completedCount = [hasFoto, hasBanco].filter(Boolean).length
+
+  // Local state
+  const [gateStep, setGateStep] = useState(hasFoto ? 1 : 0) // 0=foto, 1=banco
+  const [fotoPerfil, setFotoPerfil]   = useState(tecnico.foto_perfil_url || '')
+  const [bancoNombre, setBancoNombre] = useState(pago?.banco_nombre || '')
+  const [tipoCuenta, setTipoCuenta]   = useState(pago?.tipo_cuenta || '')
+  const [numeroCuenta, setNumeroCuenta] = useState(pago?.numero_cuenta || '')
+  const [uploadingFoto, setUploadingFoto] = useState(false)
+  const [savingBanco, setSavingBanco]     = useState(false)
+  const [savedBanco, setSavedBanco]       = useState(false)
+  const [errorBanco, setErrorBanco]       = useState('')
+
+  const onUploadFoto = async (file) => {
+    if (!file || !file.type.startsWith('image/')) return
+    if (file.size > 2 * 1024 * 1024) { alert('La imagen debe pesar menos de 2 MB.'); return }
+    setUploadingFoto(true)
+    const ext  = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const path = `perfiles/${tecnico.id}-${Date.now()}.${ext}`
+    const { error: uploadErr } = await supabase.storage.from('documentos-tecnicos').upload(path, file, { cacheControl: '3600', upsert: true })
+    if (!uploadErr) {
+      const { data } = supabase.storage.from('documentos-tecnicos').getPublicUrl(path)
+      setFotoPerfil(data.publicUrl)
+      await onUpdatePerfil({ foto_perfil_url: data.publicUrl })
+    }
+    setUploadingFoto(false)
+  }
+
+  const saveBanco = async (e) => {
+    e.preventDefault()
+    setErrorBanco('')
+    if (!bancoNombre || !tipoCuenta || !numeroCuenta) {
+      setErrorBanco('Por favor completa todos los campos bancarios.')
+      return
+    }
+    setSavingBanco(true)
+    await onUpdatePago({ banco_nombre: bancoNombre.trim(), tipo_cuenta: tipoCuenta, numero_cuenta: numeroCuenta.trim() })
+    setSavingBanco(false)
+    setSavedBanco(true)
+    setTimeout(() => onDone(), 800)
+  }
+
+  const steps = [
+    { id: 0, label: 'Foto de perfil',    done: hasFoto || Boolean(fotoPerfil), icon: '📸' },
+    { id: 1, label: 'Datos bancarios',   done: hasBanco || savedBanco,          icon: '🏦' },
+  ]
+  const allDone = steps.every(s => s.done)
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#071A14] to-[#0A3D2E] flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex w-16 h-16 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 items-center justify-center text-3xl mb-4">
+            🧑‍🔧
+          </div>
+          <h1 className="text-2xl font-extrabold text-white">Completa tu perfil</h1>
+          <p className="text-white/50 text-sm mt-1">Necesitamos estos datos antes de activar tu cuenta</p>
+        </div>
+
+        {/* Progress */}
+        <div className="flex items-center gap-3 mb-6 bg-white/5 rounded-2xl px-5 py-4">
+          {steps.map((s, i) => (
+            <>
+              <button
+                key={s.id}
+                onClick={() => setGateStep(s.id)}
+                className={`flex items-center gap-2 text-sm font-semibold transition-all ${
+                  s.done ? 'text-emerald-400' : gateStep === s.id ? 'text-white' : 'text-white/30'
+                }`}
+              >
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                  s.done ? 'bg-emerald-500 text-white' : gateStep === s.id ? 'bg-white text-gray-900' : 'bg-white/10 text-white/40'
+                }`}>
+                  {s.done ? '✓' : i + 1}
+                </span>
+                {s.label}
+              </button>
+              {i < steps.length - 1 && (
+                <div className={`flex-1 h-0.5 rounded-full ${steps[i].done ? 'bg-emerald-500' : 'bg-white/10'}`} />
+              )}
+            </>
+          ))}
+        </div>
+
+        {/* Card */}
+        <div className="bg-white rounded-3xl p-6 shadow-2xl">
+
+          {/* Step 0: Foto */}
+          {gateStep === 0 && (
+            <div className="animate-fade-in">
+              <h2 className="text-lg font-extrabold text-gray-900 mb-1">📸 Tu foto de perfil</h2>
+              <p className="text-sm text-gray-500 mb-5">Los clientes ven tu foto antes de elegirte. Una foto real genera más confianza.</p>
+
+              {/* Preview */}
+              <div className="flex justify-center mb-5">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-2xl overflow-hidden bg-emerald-50 border-2 border-dashed border-emerald-200 flex items-center justify-center">
+                    {fotoPerfil
+                      ? <img src={fotoPerfil} alt="Foto" className="w-full h-full object-cover" />
+                      : <span className="text-4xl">{tecnico.nombre?.charAt(0) || '?'}</span>
+                    }
+                  </div>
+                  {uploadingFoto && (
+                    <div className="absolute inset-0 rounded-2xl bg-white/70 flex items-center justify-center">
+                      <span className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin block" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <label className="block w-full cursor-pointer">
+                <div className="w-full border-2 border-dashed border-gray-200 hover:border-emerald-400 rounded-2xl py-5 text-center transition-all">
+                  <div className="text-2xl mb-1">📷</div>
+                  <p className="text-sm font-semibold text-gray-700">Sube tu foto de perfil</p>
+                  <p className="text-xs text-gray-400 mt-0.5">JPG, PNG o WEBP · Máx. 2 MB</p>
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={e => onUploadFoto(e.target.files?.[0])} />
+              </label>
+
+              <button
+                type="button"
+                disabled={!fotoPerfil || uploadingFoto}
+                onClick={() => setGateStep(1)}
+                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold py-3.5 rounded-xl transition-all"
+              >
+                {fotoPerfil ? 'Continuar a datos bancarios →' : 'Primero sube tu foto'}
+              </button>
+              {!fotoPerfil && (
+                <p className="text-xs text-center text-gray-400 mt-2">La foto es obligatoria para que los clientes te reconozcan.</p>
+              )}
+            </div>
+          )}
+
+          {/* Step 1: Banco */}
+          {gateStep === 1 && (
+            <form onSubmit={saveBanco} className="animate-fade-in space-y-4">
+              <div>
+                <h2 className="text-lg font-extrabold text-gray-900 mb-1">🏦 Datos de pago</h2>
+                <p className="text-sm text-gray-500">Aquí recibirás tus pagos al completar cada servicio.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Banco</label>
+                <select value={bancoNombre} onChange={e => setBancoNombre(e.target.value)} required
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="">Selecciona tu banco</option>
+                  {['Bancolombia','Davivienda','Banco de Bogotá','Banco Popular','BBVA','Scotiabank Colpatria','Banco Agrario','Nequi','Daviplata','Lulo Bank','Nubank','Banco Serfinanza','Otro'].map(b => (
+                    <option key={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Tipo de cuenta</label>
+                  <select value={tipoCuenta} onChange={e => setTipoCuenta(e.target.value)} required
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">Tipo</option>
+                    <option value="Ahorros">Ahorros</option>
+                    <option value="Corriente">Corriente</option>
+                    <option value="Nequi">Nequi</option>
+                    <option value="Daviplata">Daviplata</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Número de cuenta</label>
+                  <input value={numeroCuenta} onChange={e => setNumeroCuenta(e.target.value)} required
+                    placeholder="0000000000" type="text" inputMode="numeric"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                </div>
+              </div>
+
+              {errorBanco && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{errorBanco}</p>}
+
+              {savedBanco ? (
+                <div className="text-center py-3">
+                  <div className="text-2xl mb-1">🎉</div>
+                  <p className="font-bold text-emerald-700">¡Perfil completo! Entrando al panel...</p>
+                </div>
+              ) : (
+                <button type="submit" disabled={savingBanco}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold py-3.5 rounded-xl transition-all">
+                  {savingBanco ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                      Guardando...
+                    </span>
+                  ) : '✅ Guardar y entrar al panel'}
+                </button>
+              )}
+              <button type="button" onClick={() => setGateStep(0)}
+                className="w-full text-sm text-gray-400 hover:text-gray-600 transition-colors py-1">← Atrás</button>
+            </form>
+          )}
+        </div>
+
+        <p className="text-center text-xs text-white/30 mt-5">
+          Estos datos son privados y seguros. Solo los usa ServiYa para pagarte.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ─── Mi perfil ────────────────────────────────────────────────────────────────
 function PerfilView({ tecnico, pago, onUpdatePerfil, onUpdatePago }) {
   const [descripcion, setDesc]   = useState(tecnico.descripcion || '')
   const [tarifa, setTarifa]      = useState(tecnico.tarifa_visita || 50000)
@@ -1223,6 +1433,24 @@ export default function TecnicoPage() {
     </div>
   )
   if (!user || !tecnico) return <LoginScreen onSuccess={onLogin} />
+
+  // ─ Gate: perfil incompleto ─
+  const perfilCompleto = Boolean(tecnico.foto_perfil_url) && Boolean(pago?.banco_nombre && pago?.tipo_cuenta && pago?.numero_cuenta)
+  if (!perfilCompleto) {
+    return (
+      <ProfileCompletionGate
+        tecnico={tecnico}
+        pago={pago}
+        onUpdatePerfil={updatePerfil}
+        onUpdatePago={updatePago}
+        onDone={() => {
+          // Re-fetch pago to confirm and unlock panel
+          supabase.from('tecnico_pagos').select('*').eq('tecnico_id', tecnico.id).maybeSingle()
+            .then(({ data }) => setPago(data))
+        }}
+      />
+    )
+  }
 
   const cobrosCount = misCobros.filter(c => c.estado === 'pendiente').length
 

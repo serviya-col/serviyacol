@@ -61,9 +61,9 @@ function TecnicoCard({ tec, selected, onSelect }) {
 
       <div className="flex items-start gap-3">
         {/* Avatar / foto */}
-        {tec.foto_url ? (
+        {tec.foto_perfil_url ? (
           <img
-            src={tec.foto_url}
+            src={tec.foto_perfil_url}
             alt={tec.nombre}
             className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-gray-100"
           />
