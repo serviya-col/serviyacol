@@ -154,10 +154,21 @@ export async function POST(req) {
       tecnico_nombre, descripcion, valor_total: monto, bold_link: boldLink,
       valor_comision, valor_tecnico,
     }
-    notifyCobroCreado({ cobro: cobroData }).catch(() => {})
+    
+    // Es CRÍTICO usar await aquí porque si no Next.js Serverless Function mata 
+    // la ejecución antes de terminar de disparar los envíos HTTPS a Meta y Resend.
+    try {
+      await notifyCobroCreado({ cobro: cobroData })
+    } catch (e) {
+      console.warn('Error notifyCobroCreado:', e.message)
+    }
 
     // Notificar al admin (email + WhatsApp)
-    notifyAdminCobroCreado({ cobro: cobroData }).catch(() => {})
+    try {
+      await notifyAdminCobroCreado({ cobro: cobroData })
+    } catch (e) {
+      console.warn('Error notifyAdminCobroCreado:', e.message)
+    }
 
 
     return NextResponse.json({
