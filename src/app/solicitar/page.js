@@ -611,7 +611,9 @@ function SolicitarForm() {
           <div className="bg-brand-pale rounded-2xl p-4 flex items-start gap-3">
             <span className="text-2xl flex-shrink-0">💡</span>
             <div>
-              <p className="text-sm font-bold text-gray-800">Costo de la visita: $50.000 COP</p>
+              <p className="text-sm font-bold text-gray-800">
+                Costo de la visita: ${((tecnicoSeleccionado?.tarifa_visita || 50000)).toLocaleString('es-CO')} COP
+              </p>
               <p className="text-xs text-gray-600 mt-0.5">
                 El técnico llega, evalúa y te cotiza. Solo pagas el trabajo si aceptas la cotización. Garantía de 30 días incluida.
               </p>
