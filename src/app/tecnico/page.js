@@ -1410,6 +1410,7 @@ export default function TecnicoPage() {
   }
 
   const [savingDispon, setSavingDispon] = useState(false)
+  const [profileGatePassed, setProfileGatePassed] = useState(false)
   const updateDisponibilidad = async (valor) => {
     if (valor === tecnico?.disponibilidad) return
     setSavingDispon(true)
@@ -1435,7 +1436,8 @@ export default function TecnicoPage() {
   if (!user || !tecnico) return <LoginScreen onSuccess={onLogin} />
 
   // ─ Gate: perfil incompleto ─
-  const perfilCompleto = Boolean(tecnico.foto_perfil_url) && Boolean(pago?.banco_nombre && pago?.tipo_cuenta && pago?.numero_cuenta)
+  const perfilCompleto = profileGatePassed ||
+    (Boolean(tecnico.foto_perfil_url) && Boolean(pago?.banco_nombre && pago?.tipo_cuenta && pago?.numero_cuenta))
   if (!perfilCompleto) {
     return (
       <ProfileCompletionGate
@@ -1443,11 +1445,7 @@ export default function TecnicoPage() {
         pago={pago}
         onUpdatePerfil={updatePerfil}
         onUpdatePago={updatePago}
-        onDone={() => {
-          // Re-fetch pago to confirm and unlock panel
-          supabase.from('tecnico_pagos').select('*').eq('tecnico_id', tecnico.id).maybeSingle()
-            .then(({ data }) => setPago(data))
-        }}
+        onDone={() => setProfileGatePassed(true)}
       />
     )
   }
