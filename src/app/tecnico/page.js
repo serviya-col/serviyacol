@@ -1428,9 +1428,8 @@ export default function TecnicoPage() {
   const updatePago = async (campos) => {
     if (!campos.banco_nombre || !campos.tipo_cuenta || !campos.numero_cuenta) return { error: { message: 'Campos incompletos' } }
     
-    // DB check allows 'ahorros' or 'corriente'. Force lowercase & map alternatives.
-    let tc = campos.tipo_cuenta.toLowerCase()
-    if (tc === 'nequi' || tc === 'daviplata') tc = 'ahorros'
+    // Convert to lowercase to be standard, but preserve the exact type (nequi, daviplata, ahorros, corriente)
+    const tc = campos.tipo_cuenta.toLowerCase()
 
     const payload = { tecnico_id: tecnico.id, ...campos, tipo_cuenta: tc }
     const { error } = await supabase.from('tecnico_pagos').upsert(payload, { onConflict: 'tecnico_id' })
